@@ -630,6 +630,53 @@
       color: white;
     }
 
+    .gate {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #2d2924 0%, #4d342f 56%, #b98932 100%);
+    }
+
+    .gate.hidden {
+      display: none;
+    }
+
+    .gate-card {
+      width: min(420px, 100%);
+      background: rgba(255, 250, 240, .96);
+      border: 1px solid rgba(255, 255, 255, .45);
+      border-radius: 8px;
+      padding: 22px;
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .28);
+    }
+
+    .gate-card h1 {
+      margin: 0 0 8px;
+      color: #2d2924;
+      font-size: 24px;
+    }
+
+    .gate-card p {
+      margin: 0 0 16px;
+      color: #665b50;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .gate-error {
+      display: none;
+      margin-top: 10px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    body.locked .mobile-tabs,
+    body.locked .app {
+      display: none;
+    }
+
     @media (max-width: 980px) {
       .app { grid-template-columns: 1fr; }
       .sidebar { display: none; }
@@ -650,7 +697,21 @@
     }
   </style>
 </head>
-<body>
+<body class="locked">
+  <section class="gate" id="accessGate">
+    <div class="gate-card">
+      <h1>白金汉宫 AI 增长参谋</h1>
+      <p>这是内部使用工具。请输入访问密码后继续。</p>
+      <div class="field">
+        <label for="accessPassword">访问密码</label>
+        <input id="accessPassword" type="password" autocomplete="current-password" placeholder="请输入访问密码">
+      </div>
+      <div class="actions">
+        <button class="btn ai" id="accessBtn"><i data-lucide="lock-keyhole"></i>进入系统</button>
+      </div>
+      <div class="gate-error" id="accessError">密码不正确，请重新输入。</div>
+    </div>
+  </section>
   <div class="mobile-tabs" id="mobileTabs"></div>
   <div class="app">
     <aside class="sidebar">
@@ -970,6 +1031,7 @@
               <button class="btn" id="saveConfigBtn"><i data-lucide="save"></i>保存配置</button>
               <button class="btn secondary" id="testConfigBtn"><i data-lucide="plug-zap"></i>测试连接</button>
               <button class="btn danger" id="clearConfigBtn"><i data-lucide="trash-2"></i>清空配置</button>
+              <button class="btn ghost" id="logoutAccessBtn"><i data-lucide="log-out"></i>退出访问</button>
             </div>
             <div class="notice" id="configTestResult" style="display:none;margin-top:12px"></div>
           </div>
@@ -1246,8 +1308,44 @@ README.md
     var editBuiltInKbId = null;
     var kbDraftPreview = null;
     var kbDraftSourceBody = "";
+    var ACCESS_PASSWORD = "BJHG2026";
+    var ACCESS_KEY = "bjh_access_granted";
+    var appStarted = false;
 
     function qs(id) { return document.getElementById(id); }
+    function isAccessGranted() {
+      return localStorage.getItem(ACCESS_KEY) === "yes";
+    }
+    function showApp() {
+      document.body.classList.remove("locked");
+      qs("accessGate").classList.add("hidden");
+      if (!appStarted) {
+        appStarted = true;
+        initApp();
+      }
+    }
+    function showGate() {
+      document.body.classList.add("locked");
+      qs("accessGate").classList.remove("hidden");
+      if (qs("accessPassword")) qs("accessPassword").focus();
+    }
+    function unlockAccess() {
+      var input = qs("accessPassword");
+      var error = qs("accessError");
+      if ((input.value || "").trim() === ACCESS_PASSWORD) {
+        localStorage.setItem(ACCESS_KEY, "yes");
+        error.style.display = "none";
+        input.value = "";
+        showApp();
+      } else {
+        error.style.display = "block";
+        input.select();
+      }
+    }
+    function logoutAccess() {
+      localStorage.removeItem(ACCESS_KEY);
+      showGate();
+    }
     function getConfig() {
       return JSON.parse(localStorage.getItem("bjh_config") || "{}");
     }
@@ -2304,8 +2402,9 @@ README.md
           return testModelConnection();
         });
       });
+      qs("logoutAccessBtn").addEventListener("click", logoutAccess);
     }
-    function init() {
+    function initApp() {
       renderNav();
       renderTemplates();
       bindEvents();
@@ -2316,7 +2415,16 @@ README.md
       switchView("ask");
       if (window.lucide) lucide.createIcons();
     }
-    init();
+    function initAccessGate() {
+      qs("accessBtn").addEventListener("click", unlockAccess);
+      qs("accessPassword").addEventListener("keydown", function(event) {
+        if (event.key === "Enter") unlockAccess();
+      });
+      if (isAccessGranted()) showApp();
+      else showGate();
+      if (window.lucide) lucide.createIcons();
+    }
+    initAccessGate();
   </script>
 </body>
 </html>

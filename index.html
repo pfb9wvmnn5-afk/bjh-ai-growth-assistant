@@ -1,0 +1,2322 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>白金汉宫 AI 增长参谋</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23231f1b'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='34' font-family='Arial' fill='%23f2d18a'%3E白%3C/text%3E%3C/svg%3E">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --panel: #fffdf8;
+      --ink: #27211b;
+      --muted: #756b60;
+      --line: #e4dcca;
+      --gold: #b98932;
+      --red: #8f1f1f;
+      --green: #52705a;
+      --blue: #3d6387;
+      --shadow: 0 14px 40px rgba(68, 49, 25, .12);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 264px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      background: #231f1b;
+      color: #fffaf0;
+      padding: 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 12px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #f2d18a, #a9792c);
+      color: #231f1b;
+      border-radius: 8px;
+      font-weight: 900;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: #d4c8b8;
+      font-size: 12px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      height: 42px;
+      border-radius: 8px;
+      background: transparent;
+      color: #efe8db;
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      text-align: left;
+    }
+
+    .nav button:hover, .nav button.active {
+      background: #3b332b;
+      color: white;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,.12);
+      padding-top: 14px;
+      color: #d4c8b8;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 22px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: clamp(22px, 4vw, 34px);
+      line-height: 1.16;
+    }
+
+    .topbar p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.65;
+    }
+
+    .status {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, .78fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .panel h3 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      color: #4f463d;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--ink);
+      padding: 10px 11px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 132px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    textarea.full-editor {
+      min-height: 420px;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(185, 137, 50, .16);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      min-height: 40px;
+      border-radius: 8px;
+      padding: 0 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #2d2924;
+      color: white;
+      font-weight: 750;
+    }
+
+    .btn.secondary {
+      color: var(--ink);
+      background: #efe7d9;
+    }
+
+    .btn.ai {
+      background: var(--red);
+    }
+
+    .btn.ghost {
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid var(--line);
+    }
+
+    .btn.danger {
+      background: #9d2c2c;
+    }
+
+    .btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .output {
+      white-space: pre-wrap;
+      line-height: 1.72;
+      min-height: 360px;
+      color: #2f2923;
+      font-size: 15px;
+    }
+
+    .output-card {
+      white-space: normal;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffaf0;
+      padding: 13px;
+      margin: 0 0 10px;
+    }
+
+    .output-card.mode {
+      background: #edf5ef;
+      border-color: #cfe2d2;
+      color: #315b3b;
+      font-weight: 800;
+    }
+
+    .output-card.main {
+      background: #fff7e6;
+      border-color: #ead7ad;
+    }
+
+    .output-card.action {
+      background: #eef5f8;
+      border-color: #cbdde8;
+    }
+
+    .output-card.source {
+      background: #f7f4ee;
+      color: #62584e;
+      font-size: 13px;
+    }
+
+    .output-card.warning {
+      background: #fff0ee;
+      border-color: #e8c5be;
+      color: #7b2923;
+    }
+
+    .output-title {
+      margin: 0 0 8px;
+      color: #231f1b;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .output-body {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .output-body strong, .output-em {
+      color: var(--red);
+      font-weight: 900;
+    }
+
+    .mode-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      min-height: 32px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #edf5ef;
+      color: #3f6748;
+      border: 1px solid #cfe2d2;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .mode-note.local {
+      background: #fff7e6;
+      color: #7a5622;
+      border-color: #ead7ad;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .quick-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: white;
+      padding: 7px 10px;
+      color: #4b4035;
+      font-size: 13px;
+    }
+
+    .kb-list {
+      display: grid;
+      gap: 10px;
+      max-height: 540px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .kb-item {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .kb-item.disabled {
+      background: #f5f1e9;
+      opacity: .78;
+    }
+
+    .kb-item-head {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .kb-item-head input {
+      width: 16px;
+      height: 16px;
+      margin-top: 2px;
+    }
+
+    .kb-item h4 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+
+    .kb-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #efe7d9;
+      color: #4f463d;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tag.off {
+      background: #f2d5d0;
+      color: #7b2923;
+    }
+
+    .kb-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0;
+      align-items: center;
+    }
+
+    .checkline {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .checkline input {
+      width: 16px;
+      height: 16px;
+    }
+
+    .kb-item p {
+      margin: 0;
+      color: #51473e;
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .kb-hit {
+      background: #ffe08a;
+      color: #2d2924;
+      border-radius: 4px;
+      padding: 0 2px;
+      font-weight: 900;
+    }
+
+    .kb-preview {
+      margin-top: 14px;
+      border: 1px solid #ead7ad;
+      background: #fffaf0;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .kb-preview.empty {
+      color: var(--muted);
+      background: #f7f4ee;
+      border-color: var(--line);
+    }
+
+    .kb-preview h4 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .split-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .small-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .template-card {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 8px;
+      padding: 13px;
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .template-card h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .template-card p {
+      margin: 0;
+      line-height: 1.55;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .template-card .btn {
+      margin-top: auto;
+      width: fit-content;
+    }
+
+    .history-box {
+      border-top: 1px solid var(--line);
+      margin-top: 14px;
+      padding-top: 12px;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 8px;
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    .history-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      padding: 10px;
+    }
+
+    .history-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .history-item p {
+      margin: 0;
+      color: #4e453c;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .notice {
+      border-left: 4px solid var(--gold);
+      background: #fff7e6;
+      padding: 12px;
+      border-radius: 8px;
+      color: #5a4430;
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+
+    .mobile-tabs {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(246, 244, 239, .94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      overflow-x: auto;
+      gap: 8px;
+    }
+
+    .mobile-tabs button {
+      flex: 0 0 auto;
+      height: 36px;
+      border-radius: 999px;
+      padding: 0 12px;
+      color: var(--ink);
+      background: white;
+      border: 1px solid var(--line);
+    }
+
+    .mobile-tabs button.active {
+      background: #2d2924;
+      color: white;
+    }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .mobile-tabs { display: flex; }
+      .main { padding: 14px; }
+      .grid { grid-template-columns: 1fr; }
+      .topbar { display: block; }
+      .status { margin-top: 12px; }
+    }
+
+    @media (max-width: 640px) {
+      .form-grid, .template-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .panel { padding: 13px; }
+      .topbar h2 { font-size: 24px; }
+      .actions .btn { flex: 1 1 auto; }
+      .output { min-height: 280px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-tabs" id="mobileTabs"></div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">白</div>
+        <div>
+          <h1>白金汉宫 AI 增长参谋</h1>
+          <p>知识 · 选题 · 创作 · 销售</p>
+        </div>
+      </div>
+      <nav class="nav" id="nav"></nav>
+      <div class="sidebar-footer">
+        纯静态网页版本。配置和新增知识只保存在当前浏览器，换设备前请先导出知识库。
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="topbar">
+        <div>
+          <h2 id="pageTitle">内容搜索</h2>
+          <p id="pageDesc">用 AI 搜索并整理白金汉宫知识库内容。</p>
+        </div>
+        <div class="status"><span class="dot"></span><span id="configStatus">AI 未配置</span></div>
+      </section>
+
+      <section class="view active" data-view="ask">
+        <div class="grid">
+          <div class="panel">
+            <h3>搜索知识库内容</h3>
+            <div class="form-grid">
+              <div class="field full">
+                <label for="askInput">搜索内容</label>
+                <textarea id="askInput" placeholder="例如：白金汉宫特色、宜春优势、铜锣湾、无预制菜、升学宴、停车"></textarea>
+              </div>
+              <div class="field full">
+                <label for="askAdjust">补充要求</label>
+                <input id="askAdjust" placeholder="例如：只看门店资料、整理成3点、不要扩展知识库没有的内容">
+              </div>
+            </div>
+            <div class="quick-list">
+              <button class="chip" data-fill="askInput">白金汉宫特色</button>
+              <button class="chip" data-fill="askInput">宜春优势</button>
+              <button class="chip" data-fill="askInput">五家门店</button>
+              <button class="chip" data-fill="askInput">无预制菜</button>
+            </div>
+            <div class="actions">
+              <button class="btn ai" id="askAiBtn"><i data-lucide="sparkles"></i>AI 搜索整理</button>
+              <button class="btn secondary" data-copy="askOutput"><i data-lucide="copy"></i>复制结果</button>
+              <button class="btn secondary" data-word="askOutput" data-word-title="白金汉宫AI内容搜索"><i data-lucide="file-down"></i>导出 Word</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>搜索结果</h3>
+            <div class="mode-note local" data-mode-note>当前：请先配置 AI</div>
+            <div class="output" id="askOutput">搜索结果会显示在这里。请先到“配置”填写 API Key，然后点击 AI 搜索整理。</div>
+            <div class="history-box">
+              <div class="split-actions"><h3>历史版本</h3><button class="btn ghost" data-clear-history="askOutput">清空</button></div>
+              <div class="history-list" data-history-for="askOutput"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view="topic">
+        <div class="grid">
+          <div class="panel">
+            <h3>不知道今天拍什么，从这里开始</h3>
+            <div class="form-grid">
+              <div class="field">
+                <label for="topicPlatform">平台</label>
+                <select id="topicPlatform">
+                  <option>抖音</option><option>视频号</option><option>小红书</option><option>朋友圈</option><option>直播</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="topicGoal">目的</label>
+                <select id="topicGoal">
+                  <option>曝光</option><option>咨询</option><option>留资</option><option>加微信</option><option>到店</option><option>成交</option><option>复购</option><option>转介绍</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="topicBanquet">宴会类型</label>
+                <select id="topicBanquet">
+                  <option>升学宴</option><option>婚宴</option><option>宝宝宴</option><option>寿宴</option><option>乔迁宴</option><option>团建宴</option><option>企业年会</option><option>谢师宴</option><option>满月宴</option><option>不限</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="topicStore">门店</label>
+                <select id="topicStore">
+                  <option>不限</option><option>铜锣湾店</option><option>财富中心店</option><option>润达国际店</option><option>迎宾馆店</option><option>青龙商厦店</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="topicFormat">形式</label>
+                <select id="topicFormat">
+                  <option>金辉口播</option><option>门店实拍</option><option>客户案例</option><option>避坑攻略</option><option>价格解释</option><option>套餐介绍</option><option>厅型展示</option><option>服务过程</option><option>直播预告</option><option>朋友圈文案</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label for="topicMaterial">今日素材</label>
+                <textarea id="topicMaterial" placeholder="例如：今天铜锣湾有升学宴布置、客户反馈停车方便、现场有状元门和合影墙。"></textarea>
+              </div>
+              <div class="field full">
+                <label for="topicAdjust">调整要求</label>
+                <input id="topicAdjust" placeholder="例如：多给成交型选题、适合小红书、不要太硬广">
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn ai" id="topicAiBtn"><i data-lucide="list-plus"></i>AI 生成选题</button>
+              <button class="btn secondary" data-copy="topicOutput"><i data-lucide="copy"></i>复制选题</button>
+              <button class="btn secondary" data-word="topicOutput" data-word-title="白金汉宫AI选题策划"><i data-lucide="file-down"></i>导出 Word</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>今日选题建议</h3>
+            <div class="mode-note local" data-mode-note>当前：请先配置 AI</div>
+            <div class="output" id="topicOutput">选题会包含标题、开头钩子、核心方向、可拍素材和结尾引导动作。</div>
+            <div class="history-box">
+              <div class="split-actions"><h3>历史版本</h3><button class="btn ghost" data-clear-history="topicOutput">清空</button></div>
+              <div class="history-list" data-history-for="topicOutput"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view="create">
+        <div class="grid">
+          <div class="panel">
+            <h3>把想法变成脚本或文案</h3>
+            <div class="form-grid">
+              <div class="field">
+                <label for="createType">创作类型</label>
+                <select id="createType">
+                  <option>金辉单人口播</option><option>短视频脚本</option><option>直播脚本</option><option>朋友圈文案</option><option>小红书文案</option><option>销售训练文档</option><option>宴会产品说明书</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="createCount">数量</label>
+                <input id="createCount" type="number" min="1" max="10" value="3">
+              </div>
+              <div class="field">
+                <label for="createStore">门店</label>
+                <select id="createStore">
+                  <option>不限</option><option>铜锣湾店</option><option>财富中心店</option><option>润达国际店</option><option>迎宾馆店</option><option>青龙商厦店</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="createBanquet">宴会类型</label>
+                <select id="createBanquet">
+                  <option>升学宴</option><option>婚宴</option><option>宝宝宴</option><option>寿宴</option><option>企业宴</option><option>谢师宴</option><option>不限</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label for="createBrief">主题或要求</label>
+                <textarea id="createBrief" placeholder="例如：帮我写金辉口播，主题是升学宴不能只比价格，要看菜品、服务和现场效果。"></textarea>
+              </div>
+              <div class="field full">
+                <label for="createAdjust">调整要求</label>
+                <input id="createAdjust" placeholder="例如：更像金辉说话、加一点情绪、结尾引导私信">
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn ai" id="createAiBtn"><i data-lucide="pen-tool"></i>AI 创作内容</button>
+              <button class="btn secondary" data-copy="createOutput"><i data-lucide="copy"></i>复制内容</button>
+              <button class="btn secondary" data-word="createOutput" data-word-title="白金汉宫AI内容创作"><i data-lucide="file-down"></i>导出 Word</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>创作结果</h3>
+            <div class="mode-note local" data-mode-note>当前：请先配置 AI</div>
+            <div class="output" id="createOutput">金辉单人口播会默认只输出纯口播文字，并用「」括起来。</div>
+            <div class="history-box">
+              <div class="split-actions"><h3>历史版本</h3><button class="btn ghost" data-clear-history="createOutput">清空</button></div>
+              <div class="history-list" data-history-for="createOutput"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view="sales">
+        <div class="grid">
+          <div class="panel">
+            <h3>粘贴客户微信，生成回复</h3>
+            <div class="form-grid">
+              <div class="field">
+                <label for="salesStage">销售阶段</label>
+                <select id="salesStage">
+                  <option>自动判断</option><option>初次咨询</option><option>问价格</option><option>问档期</option><option>看厅邀约</option><option>犹豫对比</option><option>砍价</option><option>成交前确认</option><option>宴后回访</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="salesStyle">回复风格</label>
+                <select id="salesStyle">
+                  <option>给3个版本</option><option>大白话口语版</option><option>亲切自然</option><option>稳重专业</option><option>推进成交</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label for="salesInput">客户原话</label>
+                <textarea id="salesInput" placeholder="例如：你们升学宴多少钱一桌？有没有优惠？"></textarea>
+              </div>
+              <div class="field full">
+                <label for="salesContext">已知信息</label>
+                <input id="salesContext" placeholder="例如：客户预计 18 桌，8 月中旬，想看铜锣湾店。">
+              </div>
+              <div class="field full">
+                <label for="salesAdjust">调整要求</label>
+                <input id="salesAdjust" placeholder="例如：更亲切一点、不要催太紧、加上到店看厅邀请">
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn ai" id="salesAiBtn"><i data-lucide="message-square-reply"></i>AI 生成微信回复</button>
+              <button class="btn secondary" data-copy="salesOutput"><i data-lucide="copy"></i>复制回复</button>
+              <button class="btn secondary" data-word="salesOutput" data-word-title="白金汉宫AI销售回复"><i data-lucide="file-down"></i>导出 Word</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>可复制回复</h3>
+            <div class="mode-note local" data-mode-note>当前：请先配置 AI</div>
+            <div class="output" id="salesOutput">回复会尽量像真人销售微信，不硬推、不乱降价，先回应再引导下一步。</div>
+            <div class="history-box">
+              <div class="split-actions"><h3>历史版本</h3><button class="btn ghost" data-clear-history="salesOutput">清空</button></div>
+              <div class="history-list" data-history-for="salesOutput"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view="kb">
+        <div class="grid">
+          <div class="panel">
+            <div class="notice">内置知识库已经写在网页里，所有人拿到链接后都会自带这些基础知识。你在这里新增的知识只保存在当前浏览器；要同步给其他员工，请导出 JSON，再让对方导入。后续如果要全员自动同步，需要升级成公司统一云端知识库版本。</div>
+            <h3 id="kbFormTitle">新增知识</h3>
+            <div class="form-grid">
+              <div class="field full">
+                <label for="kbBody" id="kbBodyLabel">新增知识正文</label>
+                <textarea id="kbBody" placeholder="直接把新政策、新话术、新活动、新客户问题或新案例写在这里。系统会自动识别标题、分类、场景和关键词。"></textarea>
+                <div class="hint" id="kbBodyHint">不用填写标题和分类，保存时会根据正文自动匹配。</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn ai" id="organizeKbBtn"><i data-lucide="sparkles"></i>AI 整理预览</button>
+              <button class="btn" id="saveKbBtn"><i data-lucide="save"></i>确认保存知识</button>
+              <button class="btn secondary" id="resetKbBtn"><i data-lucide="plus"></i>新增一条</button>
+              <button class="btn ghost" id="exportKbBtn"><i data-lucide="download"></i>导出 JSON</button>
+              <label class="btn ghost" for="importKbInput"><i data-lucide="upload"></i>导入 JSON</label>
+              <input id="importKbInput" type="file" accept=".json,application/json" hidden>
+            </div>
+            <div class="kb-preview empty" id="kbPreview">整理预览会显示在这里。先输入正文，再点击“AI 整理预览”。</div>
+          </div>
+          <div class="panel">
+            <div class="split-actions">
+              <h3>知识列表</h3>
+              <span class="hint" id="kbCount"></span>
+            </div>
+            <div class="field">
+              <label for="kbSearch">搜索</label>
+              <input id="kbSearch" placeholder="搜索标题、分类、关键词、正文">
+            </div>
+            <div class="kb-toolbar">
+              <label class="checkline"><input type="checkbox" id="kbSelectAll">全选当前结果</label>
+              <label class="checkline"><input type="checkbox" id="kbShowDisabled">显示已停用</label>
+              <button class="btn ghost" id="kbDisableSelectedBtn"><i data-lucide="eye-off"></i>停用选中</button>
+              <button class="btn ghost" id="kbRestoreSelectedBtn"><i data-lucide="rotate-ccw"></i>恢复选中</button>
+              <button class="btn danger" id="kbDeleteSelectedBtn"><i data-lucide="trash-2"></i>删除选中</button>
+            </div>
+            <div class="hint">自定义知识可以删除；内置知识会被“停用”，停用后不会参与搜索匹配和 AI 提示词。</div>
+            <div class="kb-list" id="kbList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view="templates">
+        <div class="panel">
+          <h3>常用模板</h3>
+          <div class="template-grid" id="templateGrid"></div>
+        </div>
+      </section>
+
+      <section class="view" data-view="config">
+        <div class="grid">
+          <div class="panel">
+            <h3>模型配置</h3>
+            <div class="notice">所有生成都使用 AI。请先选择模型方案并填写自己的 API Key。选择模型后，Base URL 和模型名会自动填写，其中模型名可以手动修改，方便后续模型版本变更。不要把统一 API Key 写进代码，这里的配置只保存在当前浏览器。</div>
+            <div class="form-grid">
+              <div class="field full">
+                <label for="modelPreset">模型方案</label>
+                <select id="modelPreset">
+                  <option value="openai">OpenAI（推荐）</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="qwen">通义千问</option>
+                  <option value="kimi">Kimi</option>
+                  <option value="custom">自定义</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label for="apiKey">API Key</label>
+                <input id="apiKey" type="password" placeholder="sk-...">
+              </div>
+              <div class="field full">
+                <label for="baseUrl">Base URL</label>
+                <input id="baseUrl" placeholder="选择模型方案后自动填写">
+              </div>
+              <div class="field">
+                <label for="modelName">模型名</label>
+                <input id="modelName" placeholder="自动填写后也可以手动修改">
+              </div>
+              <div class="field">
+                <label for="temperature">创作灵活度</label>
+                <select id="temperature">
+                  <option value="0.4">稳一点</option>
+                  <option value="0.7" selected>平衡</option>
+                  <option value="0.9">更有创意</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn" id="saveConfigBtn"><i data-lucide="save"></i>保存配置</button>
+              <button class="btn secondary" id="testConfigBtn"><i data-lucide="plug-zap"></i>测试连接</button>
+              <button class="btn danger" id="clearConfigBtn"><i data-lucide="trash-2"></i>清空配置</button>
+            </div>
+            <div class="notice" id="configTestResult" style="display:none;margin-top:12px"></div>
+          </div>
+          <div class="panel">
+            <h3>部署说明</h3>
+            <div class="output">这个版本可以直接部署到 GitHub Pages、Netlify、Vercel 或 Cloudflare Pages。
+
+建议文件结构：
+index.html
+README.md
+
+手机使用建议：
+1. 用 Safari 或微信外部浏览器打开网页。
+2. 第一次进入“配置”填写自己的 API Key。
+3. 日常新增知识后，定期导出 JSON 备份。
+4. 给其他员工同步知识时，让对方导入 JSON。
+
+纯静态边界：
+当前版本没有统一云端数据库，不会自动同步每个员工新增的知识。后续可以升级成 Supabase、飞书表格、腾讯文档或 GitHub 文件同步版本。</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var NAV = [
+      { id: "ask", label: "内容搜索", icon: "search", desc: "用 AI 搜索并整理白金汉宫知识库内容。" },
+      { id: "topic", label: "选题策划", icon: "lightbulb", desc: "不知道今天拍什么、写什么、发什么时，从平台、目标、宴会类型和今日素材生成选题。" },
+      { id: "create", label: "内容创作", icon: "pen-tool", desc: "把选题变成金辉口播、短视频、直播、朋友圈、小红书或销售训练内容。" },
+      { id: "sales", label: "销售回复", icon: "messages-square", desc: "粘贴客户微信原话，生成自然可复制的销售回复。" },
+      { id: "kb", label: "知识库", icon: "database", desc: "随时补充白金汉宫新知识，支持搜索、编辑、删除、导入和导出。" },
+      { id: "templates", label: "常用模板", icon: "layout-template", desc: "快速调用常用任务提示词。" },
+      { id: "config", label: "配置", icon: "settings", desc: "填写自己的 API Key、Base URL 和模型名。" }
+    ];
+
+    var BUILT_IN_KB = [
+          {
+                "id": "ref_full_01",
+                "source": "内置完整资料",
+                "category": "线上运营",
+                "title": "江苏线上课程笔记",
+                "body": "# 江苏线上课程笔记——抖音线上运营与直播方法论\n\n> 来源：2026年外出学习——江苏线上课程\n> 核心原则：线上的核心就是变现，一切目的都为了变现。\n\n---\n\n## 一、抖音底层逻辑\n\n### 平台趋势\n\n| 阶段 | 特征 |\n| --- | --- |\n| 从量到内容再到商业 | 抖音已进入内容即商业的阶段 |\n| 200粉就能带货 | 门槛极低，人人可做 |\n| 推流平均化 | 平台不放一个篮子里，不让一家独大，机会分散 |\n\n### 流量问题\n\n- **没流量** → 爆款视频是可以二次爆的，可复制\n- 关键在于：**找到爆款公式，重复执行**\n\n---\n\n## 二、内容创作核心逻辑\n\n### 用户思维\n\n拍之前先问自己三个问题：\n1. **给谁看？**\n2. **哪些点能吸引他？**\n3. **他在意什么？**\n\n### 核心原则\n\n| 原则 | 说明 |\n| --- | --- |\n| **经营用户群体，不是经营垂直赛道** | 不要只盯着\"宴会\"这个赛道，要经营\"宜春本地办宴需求的人\"这个群体 |\n| **做本地，体现宜春和产品** | 你在哪里、你卖什么，要让用户一眼看懂 |\n| **万能模板** | \"为什么在XX办过什么的，都是我们的老顾客\"——客户见证是最高效的内容 |\n\n### 内容规避雷同\n\n| 维度 | 做法 |\n| --- | --- |\n| 不同人 | 不同员工出镜 |\n| 不同内容 | 不同角度讲述 |\n| 不同环境 | 不同宴会厅、不同场景 |\n\n---\n\n## 三、短视频脚本模板化\n\n### 设计原则\n\n设计 **开头模板 + 结尾模板**，就可无限创作：\n\n1. **开头模板**：前3秒抓住注意力（提问/悬念/共情）\n2. **内容模板**：固定结构填充不同素材\n3. **结尾模板**：引导动作（留资/进直播间/关注）\n\n### 执行策略\n\n- **不断重复**一个有效的模板\n- **加一点投放**（有自然量后再投流，不要一上来就烧钱）\n- **可复制**：让普通员工都能用，不依赖个人才华\n\n---\n\n## 四、直播方法论\n\n### 主播心理建设\n\n1. **多看录屏，多照镜子**，找到自己好看的角度\n2. **调整美颜**——先把形象打理好\n3. **参数要自信**——不是技术参数，是你的状态参数\n4. **镜头拟人化**——把镜头想象成熟悉的人\n5. **心理上不要把自己放太高**——不是明星也不是爱豆，就是本地宴会的推荐人\n\n### 造型与妆容\n\n- **妆容遮盖缺点**，不是追求完美\n- **不同的主播穿透不同的人群**——不同年龄、气质的主播吸引不同客户\n- **根据你的货品和场景风格去给自己做造型的加法**\n\n### 找对标直播间\n\n| 对比维度 | 动作 |\n| --- | --- |\n| 别人有的你没有的 | **去优化** |\n| 别人没有的你有的 | **去放大** |\n| 别人有的你也有的 | **去保持** |\n\n### 核心公式\n\n> **卖什么产品 → 直播内容、话术、妆造都围绕这个适用人群来做**\n\n可以设计**统一的直播话术**，大家一起播。\n\n---\n\n## 五、痛点方法论\n\n### 痛点的作用\n\n| 作用 | 说明 |\n| --- | --- |\n| **框人群** | 用痛点筛选出对的人 |\n| **制造需求** | 从表面需求上升到心理需求 |\n\n### 痛点的误区\n\n1. **不是越多越好**——一个核心痛点打透就够了\n2. **不要臆想痛点**——你以为的痛点不一定是客户真的痛点\n3. **不是越痛越好**——过度的焦虑会让用户逃离\n\n### 找痛点的方法\n\n1. **用户思维找买点**——客户买的是什么？不是宴会，是体面、省心、有面子\n2. **买点的反义词**——体面的反义词是丢面子，省心的反义词是麻烦\n3. **反义词带来的坏处（结合场景升心理）** ——办婚礼丢面子是什么场景？亲戚朋友说闲话\n\n### 痛点的表达形式\n\n| 形式 | 示例 |\n| --- | --- |\n| **共情式**（像我一样） | \"像我一样，第一次给孩子办升学宴，什么都不懂...\" |\n| **提问式**（有没有） | \"有没有怕在酒店办婚礼被坑的家人？\" |\n| **认同式**（我知道） | \"我知道大家选酒店最怕什么——看着好看，实际不咋地\" |\n| **叙述式**（像很多人） | \"像很多人选酒店，看了七八家，最后还是选了我们家\" |\n\n---\n\n## 六、安全感话术塑造\n\n> **安全感 = 人设 + 背景 + 口碑 + 服务**\n\n### 话术结构模版\n\n| 维度 | 话术参考 |\n| --- | --- |\n| **人设形象** | \"我是XX宴会酒店的负责人，做宴会餐饮已经8年了，今天开播就是想让更多宜春的朋友知道我们家\" |\n| **品牌背景** | \"我们家XX和XX都有门店，一共X个主题宴会厅，8年来已经给超过XXXX对新人办过婚礼\" |\n| **好评口碑** | \"我没请大网红，就是自己酒店的员工在直播，因为我们最了解自己的场地和菜品\" |\n| **优质服务** | \"所有套餐一年内有效，未使用随时可退，免费改期，没有任何隐形消费\" |\n\n---\n\n## 七、直播话术框架\n\n### 框架一（侧重竞品对比）\n\n| 环节 | 占比 | 内容 |\n| --- | --- | --- |\n| 场景营造 | 5% | 模拟真实宴会场景，让用户\"对号入座\"，激发潜在需求 |\n| 同类品比对 | 15% | 列举本地主流竞品的普遍痛点，不贬低，只客观突出自身优势 |\n| 卖点介绍 | 30% | 分模块阐述场地硬件、餐饮品质、服务标准，现场切镜头展示 |\n| 搭配推荐 | 20% | 基础套餐+升级选项，覆盖不同预算和需求 |\n| 福利优惠 | 15% | 强互动（扣\"酒店名字\"领券）、定金膨胀、限量名额 |\n| 卖点强调 | 15% | 重复3个最核心的不可替代卖点，加深用户印象 |\n\n### 框架二（侧重福利逼单）\n\n| 环节 | 占比 | 内容 |\n| --- | --- | --- |\n| 产品概述 | 10% | 用真实数据建立初步信任，自然引出产品 |\n| 卖点介绍 | 20% | 让观众产生\"办宴会用得上，花得值\"的感受 |\n| 场景营造 | 30% | 带看不同宴会厅实景，让观众对号入座 |\n| 福利优惠 | 40% | 定金膨胀、限量名额、保价承诺、无忧退改，推动立即下单 |\n\n### 完整直播话术模版\n\n**产品概述：**\n\"这个套餐真的卖爆了！办宴会一定要认准XX，我们在宜春做了X年宴会，老客户转介绍占了我们一半的生意！很多人说办宴会麻烦又费钱，今天这个套餐，从场地到餐饮到布置一站式搞定，能帮你省至少一半的时间和钱。\"\n\n**卖点介绍：**\n\"它的场地是我们家卖得最好的无柱主题厅，层高足足X米，全场没有一根柱子。不管你搭水晶吊顶、花艺布景还是LED大屏，效果直接拉满。所有菜品都是当天新鲜采购、现点现做，绝对拒绝预制菜。每个订单都配专属宴会管家，全程一对一服务。\"\n\n**场景营造：**\n\"来我们看一下上个月办的婚礼现场效果……如果是办升学宴，我们可以帮你布置成金榜题名的主题……办宝宝宴还有专门的卡通主题布置和小丑表演。\"\n\n**福利优惠：**\n\"今天在直播间不要12999，只要9999！拍定金1000抵3000，前20名再送价值2090的大礼包！一年内有效，未使用随时可退，免费改期3次！\"\n\n---\n\n## 八、可复制执行要点\n\n### 让普通员工都能用的原则\n\n1. **模板化**——脚本有固定框架，员工只需填空\n2. **统一化**——统一直播话术，大家一起播\n3. **重复化**——有效的模板不断重复，不是每次重新创作\n4. **可复制**——不依赖个人才华，依赖系统和流程\n\n### 直播中不同情况的应对话术（待补充模板）\n\n- 人来了怎么说\n- 人走了怎么说\n- 有评论怎么接\n- 冷场怎么暖\n\n---\n\n*建议：后续可根据实际直播经验，补充\"直播间常见情况应对话术对照表\"。*",
+                "scene": "江苏线上课程笔记",
+                "keywords": "江苏线上课程笔记,线上,抖音,直播,客户,宴会厅,升学宴,服务,门店"
+          },
+          {
+                "id": "ref_full_02",
+                "source": "内置完整资料",
+                "category": "短视频脚本",
+                "title": "金辉单人自拍脚本案例",
+                "body": "# 金辉单人自拍脚本案例\n\n本文件记录了金辉单人自拍脚本的生成模板，供以后同类型任务复用。\n\n## 任务流程（默认优先级2026-06-20修正）\n\n⚠️ **第一优先级：直接给纯口播文字。** 用户明确表示「我只需要口播内容」「不要搭配其他什么七七八八的」。不要先出分镜头表格再等用户说要简化。\n\n1. 用户说「帮我写一个拍摄脚本/口播/vlog」→ **直接出纯口播文字版**。只写要说的话，用「」括起来，不加画面说明、不分镜头、不写时长、不配表格。\n2. 每段口播后面可以加一行简短说明（如「这里配现场素材画面」），但不要详细到「5秒拍XX、10秒拍XX」。\n3. 如果有多个版本倾向，给2-3个简短版本的口播文字让用户选（如热情现场派/简洁干练派/走心温情派），每个版本仅口播内容，不写拍摄方式。\n4. 用户纠正后立刻调整，不要辩解或解释为什么一开始出了分镜头版。\n5. 所有文档存 iCloud 云盘 `白金汉宫/` 文件夹\n6. 脚本文件（.py 生成脚本）移入 `白金汉宫/脚本文件/`\n\n## 视频①：婚礼音乐推荐（约50秒）\n\n| 段 | 口播内容 |\n|:--|:--|\n| 开头 | 「婚礼上选错一首歌，全场气氛直接冷掉。今天金辉给你推荐一首绝不翻车的——」 |\n| 中间① | 「《A Thousand Years》，经典中的经典。新娘入场走T台那段，钢琴前奏一响，全场人自动安静。」 |\n| 中间② | 「我主持了上百场婚礼，这首歌是新娘点名率最高的前三。不是因为它有多时髦，是它的歌词每个字都像在替新人说心里话。」 |\n| 扎口袋 | 「我在白金汉宫做婚礼主持，帮新人推荐歌单、设计流程、把控现场氛围。如果你在宜春正在备婚或者想听听婚礼音乐怎么选，评论区留个档期，我免费帮你做一份专属歌单。」 |\n\n## 视频②：暮光森林厅展示（约1分钟）\n\n| 段 | 口播内容 |\n|:--|:--|\n| 开头 | 「今天带你们看一个厅——白金汉宫铜锣湾店的暮光森林。到底适合办什么？一分钟给你讲明白。」 |\n| ①全景 | 「你看这个层高，无柱设计，全场LED大屏标配，不用额外加钱租。暮光森林的灯光一打，整个厅像童话森林一样。」 |\n| ②服务 | 「迎宾区跟厅是分开的，新娘有自己的化妆间，不串场。来我们这办宴，全程有宴会管家盯，你只管当主角。」 |\n| ③草坪卖点 | 「而且我们这栋楼顶还有一个空中草坪。天气好的时候，户外办仪式、拍照、搞个小派对——脚下是青草，头顶是蓝天，整座城市都是你们的背景板。」 |\n| 扎口袋 | 「我是金辉，白金汉宫铜锣湾店。在宜春要办婚宴、宝宝宴、升学宴的，这个厅你亲自来看一趟。评论区留档期，我带你实地看厅。」 |\n\n## 视频③：宝宝宴多场Vlog（2026-06-20新增）\n\n### 场景\n金辉一天主持两场宝宝宴（百日+周岁），铜锣湾店一楼三个宝宝宴同时进行，布置漂亮客人开心。\n\n### 可选套餐\n\n**套餐A：热闹现场Vlog（约60秒）** — 展示整栋楼全满、金辉穿梭两场的热闹感\n- 开场：「今天铜锣湾店一楼有多热闹？三个厅同时办宝宝宴，其中两场我主持——金辉的周末，安排的明明白白。」\n- 中场：百日宴布置→换场过渡→周岁宴抓周→菜品展示\n- 扎口袋：「我是金辉，白金汉宫的主持人。在宜春要办宝宝宴、婚宴的，评论区留个档期，我今天能给你安排的，明天也能给你安排好。」\n\n**套餐B：温情纪实版（约50秒）** — 走心路线，突出主持人的温度\n- 开场：「站在台上主持的时候，大家看到的是专业的金辉。但你们看不到的是——」\n- 中场：妈妈抱宝宝笑→布置细节特写→全场唱生日歌\n- 扎口袋：「我是金辉，白金汉宫主持人。不是每一场主持都只为了完成工作，每一场我都当成自己的事在做。」\n\n**套餐C：能力展示型（约55秒）** — 展示一天两场的接单量和节奏把控\n- 开场：「一天两场宝宝宴，百日宴+周岁宴，我的周末这样过。」\n- 中场：百日宴节奏→周岁宴抓周→菜品和管家服务\n- 扎口袋：「我是金辉，宜春白金汉宫签约主持人。一天两场，节奏稳得住，每一场都当第一场认真对待。」\n\n### 多场宝宝宴Vlog的设计要点\n- 核心画面：三个厅同时进行的全景、布置细节、客户笑脸（不拍正面）、菜品、上菜节奏\n- 口播重点：强调「同一栋楼三个厅同时办」「布置都是策划部做的」「现做现上没有预制菜」\n- 三个套餐给用户选，不要替用户决定风格\n\n## 用户关键偏好（持续更新）\n\n- 宴会厅名称必须准确（用户纠正：不是\"X号厅\"而是\"暮光森林\"）\n- **默认流程：直接给纯口播文字，不加分镜头表格、不加时长、不写画面说明**\n- 口播内容用「」括起来，方便识别哪些是说出声的话\n- 全程一个人自拍，不用搭档，用手机支架就行\n- 拍摄方式：竖屏1080P 60帧，用厅内灯光不需要补光\n- 竖拍机位：手机支架固定，走到不同位置不同景别\n- 草坪镜头必须拍（铜锣湾店独有卖点）\n- 当用户描述今天的工作场景（多场同时进行、布置漂亮、客人开心）时，优先设计2-3个简短口播版本供选择，覆盖热情型、干练型、温情型\n- **不要在口播中假设用户有彩排环节**（用户纠正：有时候是直接开场没有彩排）\n- **用户纠正后的反应：立刻按新要求出内容，不解释为什么之前是另一个格式**",
+                "scene": "金辉单人自拍脚本案例",
+                "keywords": "金辉单人自拍脚本案例,金辉,白金汉宫,服务,婚宴,升学宴,客户,宴会厅"
+          },
+          {
+                "id": "ref_full_03",
+                "source": "内置完整资料",
+                "category": "宴会厅",
+                "title": "门店宴会厅资料",
+                "body": "# 门店宴会厅资料\n\n## 铜锣湾店\n\n- 地址：袁州区中山东路818铜锣湾广场。\n- 停车：1000+停车位，店内就餐免费，配备充电桩，附近有大巴停靠位。\n- 户外：500平方米超大户外草坪，可容纳300人，可做草坪仪式、婚礼派对、户外活动。\n- 适配方向：大体量婚礼、草坪婚礼、多厅选择、年轻化主题活动、升学宴集中爆发。\n\n| 厅名 | 层高 | 立柱 | 最大容纳 | 风格与适配 |\n| --- | --- | --- | --- | --- |\n| 大唐盛世厅 | 4.5m | 有 | 60桌 | 盛唐国风中式鎏金风，适合大气中式、汉唐婚礼、家族重视体面感的婚宴 |\n| 浮生若梦厅 | 4.5m | 未明 | 43桌 | 现代顶奢水晶风，适合极简、大气、冷调银白婚礼 |\n| 仲夏梦歌厅 | 4.5m | 有 | 45桌 | 轻奢韩系水晶风，适合年轻人、清冷电影感、白绿花艺 |\n| 柔纱艺术秀场水晶风厅 | 4.5m | 未明 | 40桌 | 奶白温柔、轻奢艺术、小众精致婚礼 |\n| 苍穹织梦厅 | 4.5m | 有 | 65桌 | 白蓝梦幻水晶风，适合唯美大气、沉浸式婚礼 |\n| 鎏金岁月厅 | 4.5m | 有 | 55桌 | 高级落日鎏金风，适合黑金暖棕、高级电影感、奢华婚礼 |\n\n## 财富中心店\n\n- 地址：袁州区烟雨路财富中心1-2层。\n- 停车：1000+停车位，店内就餐免费，配备充电桩，附近有大巴停靠位。\n- 适配方向：高级感婚礼、沉浸式主题、城区客群、商务宴和发布会。\n\n| 厅名 | 层高 | 立柱 | 最大容纳 | 风格与适配 |\n| --- | --- | --- | --- | --- |\n| 梦起云岚厅 | 10m | 无 | 60桌 | 高级秘境艺术水晶风，10米穹顶，适合小众高级、沉浸式婚礼、发布会 |\n| 深蓝之鲟厅 | 6m | 有 | 35桌 | 深海梦幻城堡风，适合公主感、海洋主题、生日宴、宝宝宴、年轻婚礼 |\n\n## 润达国际店\n\n- 地址：袁州区宜春南路136号原润达百货。\n- 停车：2000+停车位，店内就餐2小时免费，配备充电桩，附近有大巴停靠位。\n- 适配方向：小宴、家庭宴、商圈流量、灵活宴请、升学宴补位。\n\n| 厅名 | 层高 | 立柱 | 最大容纳 | 风格与适配 |\n| --- | --- | --- | --- | --- |\n| 繁华绮梦厅 | 4.5m | 有 | 40桌 | 轻奢水晶/艺术风，高级柔和色调，适配多种宴请 |\n\n## 迎宾馆店\n\n- 地址：袁州区卢洲北路699号迎宾馆进门右转。\n- 停车：300+停车位，免费，配备充电桩，附近有大巴停靠位。\n- 适配方向：水晶风、法式庄园感、体面型婚宴、重要家庭宴。\n\n| 厅名 | 层高 | 立柱 | 最大容纳 | 风格与适配 |\n| --- | --- | --- | --- | --- |\n| 施华洛厅 | 6m | 有 | 65桌 | 施华洛水晶风，适合盛大、仙气、奢华水晶主题婚礼 |\n| 白金汉宫厅 | 4.5m | 有 | 45桌 | 香槟繁花复古风，适合法式庄园风、温柔高级婚礼 |\n\n## 青龙商厦店\n\n- 地址：袁州区东风大街283号青龙商厦12楼。\n- 停车：600+停车位，店内就餐2小时免费，无充电桩，附近有大巴停靠位。\n- 适配方向：欧式奢华婚礼、市中心客户、无柱大厅需求。\n\n| 厅名 | 层高 | 立柱 | 最大容纳 | 风格与适配 |\n| --- | --- | --- | --- | --- |\n| 维纳斯厅 | 6m | 无 | 65桌 | 欧式鎏金水晶风，适合欧式宫廷、奢华婚礼、大体量宴请 |\n\n## 推荐逻辑\n\n- 客户要草坪、户外、派对：优先铜锣湾店。\n- 客户要10米层高、高级艺术感：优先财富中心店梦起云岚厅。\n- 客户要欧式宫廷、无柱、大厅：优先青龙商厦店维纳斯厅。\n- 客户要仙气水晶、法式庄园：优先迎宾馆店。\n- 客户要灵活小宴、商圈便利：优先润达国际店。\n- 客户特别看重停车：优先润达国际店、铜锣湾店、财富中心店。",
+                "scene": "门店宴会厅资料",
+                "keywords": "门店宴会厅资料,门店,宴会厅,升学宴,婚宴,白金汉宫,客户"
+          },
+          {
+                "id": "ref_full_04",
+                "source": "内置完整资料",
+                "category": "品牌门店",
+                "title": "品牌与门店资料",
+                "body": "# 品牌与门店资料\n\n## 品牌基础\n\n- 品牌名称：宜春白金汉宫国际宴会中心。\n- 成立时间：2018年。\n- 门店数量：5家。\n- 门店：迎宾馆店、青龙商厦店、财富中心店、润达国际店、铜锣湾店。\n- 区位特点：各门店位于宜春市区地标性建筑旁，覆盖主要城区，交通便利，方便就近选择。\n- 门店开业与历年增长数据：\n  - 2018年：迎宾馆店、青龙商厦店（首批）\n  - 2021年：财富中心店\n  - 2022年（4店）：季度活动408单，周年庆活动1496万\n  - 2023年（5店·润达开业）：季度活动611单，2143万\n  - 2024年（6店·铜锣湾开业）：季度活动620.5单，1487万\n  - 2025年（6店）：季度活动901单，2509万\n- 主营业务：婚宴、宝宝宴、乔迁宴、寿宴、生日宴、商务年会、品牌发布会、团建盛典等全品类宴请。\n\n## 核心优势\n\n- 一站式全包服务：场地布置、流程规划、主持、摄影摄像、婚纱、跟妆、西服、宴会管家等可灵活选配。\n- 40余个不同风格主题宴会厅，覆盖中式、韩系、水晶、欧式、法式、深海、草坪等多种审美。\n- 菜品现做现上，无预制菜，分量充足，支持试菜服务。\n- 专业宴会管家全程统筹，把控上菜节奏、现场服务和流程衔接。\n- 全厅标配演唱会级灯光舞美、专业音响、麦克风、LED大屏，无需额外租赁。\n- 每个宴会厅均设独立迎宾区和新娘化妆休息间。\n- 各门店均有停车资源，部分门店配备充电桩和大巴停靠条件。\n\n## 菜品套餐\n\n所有套餐均为现做现上、无预制菜，支持试菜，可根据预算和宴请规模灵活选择。\n\n| 套餐价格 | 菜品配置 | 招牌代表菜 |\n| --- | --- | --- |\n| 1199元 | 凉菜6道、汤品10盅、热菜13道、主食1份、果盘1份 | 宜春特色慈化鸡、干锅香辣山羊肉 |\n| 1399元 | 凉菜6道、汤品10盅、热菜13道、主食1份、果盘1份 | 山珍鲍汁扣鲍鱼、招牌梅菜扣肉 |\n| 1699元 | 凉菜6道、汤品10盅、热菜13道、主食1份、果盘1份 | 蒜蓉银丝花麒龙、清蒸深海麒麟斑 |\n| 1999元 | 凉菜6道、汤品10盅、热菜13道、主食1份、果盘1份 | 金蒜开片蒸澳龙、清蒸深海老虎斑、宏图大展炒青蟹 |\n| 2699元 | 凉菜6道、汤品10盅、热菜14道、主食1份、果盘1份 | 广式清蒸龙星斑、澳洲雪花小牛腿、金牌内蒙烤羊排 |\n| 5699元 | 凉菜6道、汤品10盅、热菜14道、主食1份、果盘1份 | 芙蓉银丝帝王蟹、鸿运当头迎百福、港式深井烧鹅皇 |\n\n## 服务FAQ\n\n- 年会、发布会、会议宴是否有舞台音响：所有宴会厅均标配舞台、灯光、音响、麦克风、LED大屏。\n- 上菜速度：宴会管家统筹节奏，避免久等和菜品变冷。\n- 周末好日子价格：黄道吉日、周末档期可能上浮，工作日更优惠。\n- 一站式全包是否可拆分：可以灵活选配、拆分和增减项目。\n\n## 品牌口号\n\n- 你的婚礼，由你做主。\n- 人生大事，就到白金汉宫。\n- 以专业匠心承载每一场重要时刻，让每一场盛会都兼具格调与温度。",
+                "scene": "品牌与门店资料",
+                "keywords": "品牌与门店资料,品牌,门店资料,门店,白金汉宫,增长,婚宴,服务,宴会厅"
+          },
+          {
+                "id": "ref_full_05",
+                "source": "内置完整资料",
+                "category": "员工培训",
+                "title": "升级自动化能力",
+                "body": "# 升级自动化能力\n\n## 1. 自动生成WPS文档\n\n适用场景：\n- 用户要求“做成WPS文档、Word文档、放桌面、交付给团队、打印开会”。\n- 月度计划、活动日历、宴会产品说明书、销售晨会表、数据复盘报告都可以生成文档。\n\n工作流程：\n1. 先把内容整理成结构化资料：标题、摘要、章节、表格、清单。\n2. 优先使用 `scripts/生成WPS文档.py` 生成 `.docx`。\n3. 文档要适合WPS打开，标题清楚，表格不要过宽，销售团队能一眼看懂。\n4. 文档默认保存到 iCloud 云盘的白金汉宫文件夹：`/Users/huijin/Library/Mobile Documents/com~apple~CloudDocs/白金汉宫`。\n5. 只有当用户明确指定桌面、下载、其他文件夹或具体路径时，才保存到指定位置。\n\n文档风格：\n- 中文标题。\n- 表格优先。\n- 少写大段空话。\n- 每个计划都要有负责人、动作、频次、指标。\n\n## 2. 自动生成销售晨会表\n\n晨会表必须服务当天业绩，不做形式主义。\n\n标准结构：\n\n| 模块 | 内容 |\n| --- | --- |\n| 今日目标 | 今日新增线索、邀约到店、成交、回访、转介绍目标 |\n| 昨日复盘 | 昨天线索、到店、成交、丢单、投诉 |\n| 客户名单 | A类必成交、B类重点跟进、C类养熟客户 |\n| 训练主题 | 邀约、看厅、报价、异议处理、直播留资、回访 |\n| 标准话术 | 今日必须统一的一段话术 |\n| 角色演练 | 谁演客户，谁演销售，谁点评 |\n| 过程激励 | 新增线索、加微信、到店、成交、转介绍奖励 |\n| 晚会检查 | 晚上检查完成数和问题 |\n\n## 3. 自动生成月度活动日历\n\n活动日历要把“月月有活动，周周嘉年华”落地。\n\n输出结构：\n\n| 日期/周次 | 活动主题 | 主推产品 | 线上动作 | 门店动作 | 销售动作 | 指标 |\n| --- | --- | --- | --- | --- | --- | --- |\n\n生成规则：\n- 先定月度主线，再拆每周主题，再拆每日内容。\n- 每周至少一个主活动，每天至少一个线上动作。\n- 活动要结合节日、节气、升学、订婚、婚宴、小宴、商务会议等场景。\n- 不要每周都写“优惠促销”，要有主题、有理由、有传播点。\n\n## 4. 每个门店不同活动\n\n输出门店活动时必须做差异化，不要复制粘贴。\n\n| 门店 | 活动方向 | 适合活动 |\n| --- | --- | --- |\n| 铜锣湾店 | 草坪、大体量、年轻化、多厅选择 | 草坪订婚礼、升学宴看厅节、户外打卡、婚礼派对 |\n| 财富中心店 | 10米层高、高级艺术感、商务场景 | 高级婚礼体验日、品牌发布会、企业年会、沉浸式看厅 |\n| 润达国际店 | 商圈流量、小宴补位、家庭宴 | 小而美生日宴、宝宝宴、家庭庆功宴、升学小宴 |\n| 迎宾馆店 | 水晶风、法式庄园、体面婚宴 | 仙气水晶婚礼体验、法式庄园订婚宴、家庭体面宴 |\n| 青龙商厦店 | 市中心、欧式宫廷、无柱大厅 | 欧式宫廷婚礼秀、大厅年会、长辈满意型婚宴 |\n\n## 5. 自动判断销售和平台调整方向\n\n当用户给出销售数据时，按以下逻辑判断：\n\n| 数据表现 | 问题判断 | 调整动作 |\n| --- | --- | --- |\n| 线索多、加微信少 | 承接慢或私信话术弱 | 训练私信破冰和留资钩子 |\n| 加微信多、到店少 | 邀约理由不强 | 训练看厅邀约、档期紧迫感、看厅礼 |\n| 到店多、成交少 | 价值表达或逼单弱 | 训练产品说明书、报价逻辑、异议处理 |\n| 成交多、金额低 | 升级项弱 | 训练布置、摄影、主持、传播升级包 |\n| 成交后无转介绍 | 宴后动作弱 | 强制3天回访、7天交素材、30天会员邀请 |\n\n当用户给出平台数据时，按以下逻辑判断：\n\n| 平台表现 | 问题判断 | 调整动作 |\n| --- | --- | --- |\n| 抖音曝光低 | 选题弱或更新少 | 加强本地痛点、厅型实拍、直播切片 |\n| 抖音曝光高咨询低 | 结尾留资弱 | 每条视频加预约看厅/进群/档期咨询 |\n| 小红书收藏高咨询低 | 审美有但转化弱 | 增加价格区间、适合人群、预约方式 |\n| 视频号转发少 | 熟人传播理由弱 | 增加真实案例、客户见证、家长/新人视角 |\n| 美团点评点击高成交低 | 套餐页价值弱 | 优化套餐说明、FAQ、停车、无预制菜、一站式 |\n| 直播观看高留资低 | 主播逼单弱 | 固定每15分钟一次预约动作和限量看厅礼 |\n\n## 诊断输出模板\n\n每次诊断必须输出：\n1. 最大问题一句话。\n2. 销售/平台排名。\n3. 掉点环节。\n4. 明天立刻改的3件事。\n5. 晨会训练主题。\n6. 晚会检查指标。",
+                "scene": "升级自动化能力",
+                "keywords": "升级自动化能力,自动化,销售,复盘,白金汉宫,服务,客户,直播,线上,门店,婚宴,升学宴,体验,抖音"
+          },
+          {
+                "id": "ref_full_06",
+                "source": "内置完整资料",
+                "category": "数据复盘",
+                "title": "数据复盘与组织动作",
+                "body": "# 数据复盘与组织动作\n\n## 组织分工\n\n| 岗位 | 核心职责 | 每日动作 |\n| --- | --- | --- |\n| 门店负责人 | 目标拆解、资源协调、复盘 | 看数据、盯活动、处理关键客户 |\n| 销售/宴会顾问 | 邀约、看厅、成交、跟进 | 打电话、加微信、约到店、做记录 |\n| 宴会管家 | 服务交付、客户满意、转介绍 | 建群、确认流程、现场控场、回访 |\n| 线上运营 | 内容、直播、平台线索 | 发视频、开直播、回私信、交线索 |\n| 外拓人员 | 异业合作、企业拜访 | 拜访学校、培训机构、企业、商会 |\n| 客服/私域 | 留存、群维护、评价 | 发案例、提醒档期、收评价、做会员 |\n\n## 每日训练\n\n- 周一：邀约话术。\n- 周二：看厅介绍。\n- 周三：报价和套餐价值表达。\n- 周四：异议处理。\n- 周五：直播话术。\n- 周六：现场服务和高光环节。\n- 周日：丢单复盘和优秀案例分享。\n\n## 关键数据\n\n| 数据 | 说明 |\n| --- | --- |\n| 曝光量 | 平台内容是否有人看到 |\n| 咨询数 | 内容是否能引发行动 |\n| 加微信数 | 线上承接是否有效 |\n| 到店数 | 邀约是否有效 |\n| 成交数 | 产品、接待、报价是否有效 |\n| 成交金额 | 客单和升级项是否有效 |\n| 丢单原因 | 下周训练重点 |\n| 转介绍数 | 服务和宴后动作是否有效 |\n| 差评/投诉 | 交付短板，必须不隔夜 |\n| 直播场次 | 线上门店是否常态化 |\n\n## 复盘判断\n\n- 线索少：优先查平台数量、内容频率、视频主题、直播频次、活动鱼饵。\n- 咨询多但加微信少：查客服回复、留资钩子、私信承接。\n- 加微信多但到店少：查邀约理由、档期紧迫感、看厅礼、话术训练。\n- 到店多但成交低：查产品说明书、套餐价值表达、报价方式、现场体验。\n- 成交有但金额低：查升级项、私人定制、布置、传播、主持、摄影等附加服务。\n- 转介绍少：查宴后回访、评价引导、会员权益、礼物和照片视频交付。\n\n## 每周复盘模板\n\n| 项目 | 本周数据 | 问题判断 | 下周动作 |\n| --- | --- | --- | --- |\n| 新增线索 |  |  |  |\n| 加微信 |  |  |  |\n| 到店看厅 |  |  |  |\n| 成交单数 |  |  |  |\n| 成交金额 |  |  |  |\n| 丢单原因 |  |  |  |\n| 转介绍 |  |  |  |\n| 投诉/差评 |  |  |  |\n\n## 过程激励\n\n- 不只奖励成交，也奖励有效线索、加微信、到店、直播留资、转介绍和好评。\n- 每日公布过程榜：新增客户榜、邀约到店榜、成交榜、转介绍榜。\n- 每周做一次冠军分享和丢单复盘。\n- 正式员工要能用一句话结束争论：凡事以客户价值为中心。",
+                "scene": "数据复盘与组织动作",
+                "keywords": "数据复盘与组织动作,数据复盘,组织动作,复盘,门店,客户,销售,服务,线上,直播,体验"
+          },
+          {
+                "id": "ref_full_07",
+                "source": "内置完整资料",
+                "category": "短视频脚本",
+                "title": "线上运营规则",
+                "body": "# 线上运营规则\n\n## ⚠️ 核心认知（第一原则）\n\n> **线上的一切目的都是为了变现。** 流量不等于变现，从成交出发做流量和内容。所有线上动作——视频、直播、文案、互动——最终都要落到获客、留资、邀约、到店、成交。不产生变现的动作就是浪费。\n\n## 底层原则\n\n- 线上等于门店，不是宣传栏。\n- 公域是门，私域是客厅，门店现场是成交场。\n- 所有网络平台都要布局，但每个平台内容任务不同。\n- 线上要有耐心，先做起来，再通过数据复盘优化。\n- 不要只发优惠，要持续传播\"吃得更健康、办得更体面、现场更好看、服务更省心\"。\n- **变现=流量×转化效率** — 从成交出发做流量和内容，流量不等于变现。\n- **扎口袋原则**：每条视频不论做什么内容，最终都要变现，体现门店价值，引导留资。\n\n## 抖音底层认知\n\n### 流量机制（2025-2026年）\n\n- **平均化推流**：鸡蛋不放在一个篮子里，不会主推某一个账号，大家都有的吃。200粉就能带货。\n- **抖音发展三阶段**：从量 → 到内容 → 到商业（全民商业化）。\n- **爆款可二次爆、可复制**：一条爆过的视频换个时间、换个号、换个角度重新发，依然有机会再爆。\n- **内容广度要求**：不要全部拍婚礼现场，要结合行业内容（70%）和生活/人设内容（30%）。\n- **审核机制**：抽帧审核（先机器再人工），画面、声音、文字、封面全程审核。标题文案不能体现违规内容。\n- **断更不超7天**，超7天账号需要重新激活。\n\n### 推流四机制\n\n**机制一 — 审核机制**：机器抽帧审核画面、声音是否违规；全程审核画面、声音、文字、封面。\n\n**机制二 — 基础流量**：粉丝活跃度、粉丝兴趣决定基础流量；潜在用户（看完、点赞、转发的、没关注的后续也推）— 尽量互动；作品要活跃，日更或2天一更。\n\n**机制三 — 标签推流**：通过识别标签（垂直）推流→审核标签；作品标签由画面、声音、文字、封面哪个名词出现最多决定；账号推流标签由每条作品的作品标签强化定位（全部垂直，乱了就是生活随拍）。\n- 宴会板块标签关键词：结婚、宝宝宴、升学宴、乔迁宴、寿宴。\n- 高流量后一定接高转化：爆款视频的下一条视频一定要做转化。\n- 内容标签判定三要素：作品本身是什么人爱看 → 账号历史数据（之前什么人爱看）→ 粉丝模型（吸引来的粉丝是什么类型）。\n- **老号激活**：私密、删除、重新号、花钱投流量。\n\n**机制四 — 流量拔高机制**：\n- 抖音人工审核会\"掐\"流量（违规情况下），不会推流量。\n- 机器审核 — 公平公正 — **631法则**：\n  - 1=转粉（掉粉、涨粉）\n  - 3=互动数据（点赞、评论、收藏、转发）\n  - 6=停留数据（5秒完播率、2秒跳出）\n- **赛马机制**：作品短视频、直播、照片→先检测标签→放同一赛道同类新人→谁优秀给谁流量→然后换时间段重新来一遍。\n\n### 七三定律（内容比例）\n\n- 行业内容70%：菜品服务细节、婚礼现场、宴会厅展示、服务过程。\n- 非行业内容30%：舞蹈、自拍、生活、段子、感动瞬间、个人旅游。\n- 比例建议：行业70%+人设30%。\n\n### 高频营销注意事项\n\n- 纯硬广告不要太多。\n- 素材使用频率和人设、内容同质化问题：要改75%以上素材才能判断为新视频。\n- 公司内部人员转发视频注意事项：**不看完视频直接转发会害了公司** — 没有完播率；转发观看时尽量不要用同一WiFi，要用数据网络。\n\n## 平台分工\n\n| 平台 | 主要作用 | 内容方向 | 留资动作 |\n| --- | --- | --- | --- |\n| 抖音 | 本地曝光、直播获客 | 宴会厅实拍、案例剪辑、升学宴/婚宴主题、客户问题解答 | 评论区关键词、私信、直播预约；**绝不在账号上发电话，引导留联系方式** |\n| 视频号 | 本地熟人传播 | 门店活动、客户案例、朋友圈转发素材 | 加微信、进群、预约看厅 |\n| 小红书 | 审美种草、年轻客户 | 不土婚礼、韩系水晶、回门宴、订婚宴、宝宝宴 | 收藏咨询、私信档期 |\n| 美团/大众点评 | 搜索转化、套餐承接 | 套餐说明、门店优势、停车、服务FAQ | 电话、团购、到店核销 |\n| 私域微信 | 留存、转化、转介绍 | 案例、档期提醒、客户见证、活动通知 | 到店、下定、转介绍 |\n| 本地社群 | 区域渗透 | 升学宴、端午家宴、企业会议宴、活动福利 | 群内咨询、加微信 |\n\n## 账号矩阵体系\n\n### 账号类型\n\n| 类型 | 命名方式 | 头像 | 定位 |\n| --- | --- | --- | --- |\n| 企业号（同城号） | 地名+酒店名 | 酒店品牌Logo | 服务于当地粉丝，品牌背书 |\n| 创始人IP | 地名+酒店名+名字 | 个人写真照 | 老板亲自下场，真人出镜，为品牌背书 |\n| 员工矩阵账号 | 地名+酒店名+名字 | 个人写真/职业照 | 体现专业和职业，高频输出 |\n\n### 主页打造（实体账号三板斧）\n\n1. **业务范围**：主做什么（宜春一站式宴会）\n2. **专业度**：做了多久，服务新人数量精确到个位数（如1653对）— 体现专业用心\n3. **人设**：品质、实在、良心、靠谱、性价比\n4. 背景图用门头或效果图\n5. 主页简介超4行会折叠，控制在4行内\n\n### 矩阵运营策略\n\n#### 全域矩阵\n- 不同平台布局：抖音、小红书、视频号、知乎\n- 同样内容在不同平台分发\n\n#### 创始人IP打法（推荐）\n- 老板IP+员工矩阵：老板亲自下场、真人出镜、为品牌背书\n- 搭配N个员工账号\n- 适合：老板产业聚焦、表现力好、有分享欲、产品同质化\n\n#### 产品IP打法（备选）\n- 企业号+员工矩阵：做企业蓝V，没有出镜主体，以产品优势为主\n- 适合：老板不方便出镜、产品硬件差异化明显\n\n## 同城短视频底层核心逻辑（宴大圣体系）\n\n### 实体短视频最终目的\n核心：**吸引同城周边本地客户刷到视频，到店线下消费**。\n\n### 两大核心要解决的问题\n1. **如何让平台推送更多同城精准意向客户**\n2. **如何提升同城精准用户刷到自家短视频的曝光量**\n\n### 同城爆款标签模板（通用公式）\n> **为什么在【宜春】来我们家办过【婚宴/升学宴/寿宴】的客户都会复购转介绍**\n\n### 20-30秒同城获客短视频标准分段脚本（可直接套用）\n\n| 时长 | 板块 | 内容作用 | 文案示例 | 转化逻辑 |\n|------|------|----------|----------|----------|\n| 1-3s | 标签引流（地方+行业） | 抓取同城精准流量 | 「最近很多宜春准新人刷到我，专门来店里定婚宴」 | 抓取同城备宴流量 |\n| 4-8s | 广告1：口碑优势 | 建立客户基础信任 | 「本店本地经营8年，办过宴会的客户都会推荐亲友」 | 初次转化种草 |\n| 9-15s | 广告2：硬件场地优势 | 凸显门店竞争力 | 「爆款无柱宴会厅，自带网红打卡区域」 | 加深意向 |\n| 16-20s | 广告3：服务专业优势 | 打消客户服务顾虑 | 「宴会管家均5年以上经验，服务上千场宴会，全程无遗憾」 | 引导到店咨询 |\n\n> **完整流量链路：抓取同城精准流量 → 多层卖点转化 → 最终客户到店咨询**\n\n### 婚礼赛道爆款标题方向\n1. **情感痛点类**：婚礼3个走心小细节，新娘当场落泪\n2. **预算解决方案**：预算有限也能办高端婚礼，一招省钱出效果\n3. **性价比对比**：整场婚礼布置成本不到2万，宾客都说像梦境\n\n### 婚礼全系列内容拓展赛道\n敬酒、伴郎、伴娘、婚纱、新娘、喜糖、订婚、清单、三金、婚房、礼服、陪嫁\n\n## 短视频脚本结构（新版）\n\n### 核心创作思维（江苏课程补充）\n\n#### 拍之前先想清楚三件事\n1. **给谁看？** —— 去经营一个用户群体，不要去经营一个垂直赛道。先明确你的目标人群（备婚新人？考生家长？企业行政？），再针对他们拍内容。\n2. **哪些点能吸引他？** —— 针对这个人群的真实需求，提炼吸引点。\n3. **你在哪里？你卖什么？** —— 做本地就要体现\"宜春\"和\"白金汉宫\"，不断强化本地标签。\n\n#### 模版思维：无限创作的关键\n- **设计开头模版 + 结尾模版** = 中间内容可以无限创作\n- 开头固定套路（3-5种），结尾固定扎口袋方式（1-2种）\n- 不断重复同个模版，积累自然流量后再投流放大\n- **内容规避雷同**：不同人出镜、不同厅、不同角度、不同时间——画面换，模版不变\n\n#### 常用爆款开头模版\n- **老客户背书型**：「为什么在（宜春）办（升学宴/婚宴）的，都是我们的老客户？」\n- **痛点提问型**：「在宜春，（填宴会类型）XX万到底够不够？」\n- **展示型**：「在（填门店名）办一场（填宴会类型），效果是这样的——」\n- **数据型**：「（数字）桌（宴会类型），我们（门店名）这个厅刚刚好。」\n\n### 通用结构\n\n1. **开头3秒**：说出客户痛点或场景，用核心画面（感动、搞笑、唯美）3-5秒拉住客户。\n2. **展示资源**：宴会厅、停车、灯光、大屏、菜品、管家。\n3. **给出解决方案**：适合什么宴、多少桌、什么风格。\n4. **出镜扎口袋**：真人出镜收口 — \"刚刚大家看到的就是我们服务的XX，讲述XX过程（故事/灯光/菜品/服务细节）→ 结束后的反馈 → 如果在当地也有想要的可留联系方式。\"\n5. **强化价值**：无预制菜、现做现上、一站式省心。\n6. **行动指令**：评论/私信/预约看厅/进群，**不直接发电话**。\n\n### 视频规格\n\n- 时长：40秒-1分20秒内（尽量竖屏）\n- 竖屏拍摄为主\n- 导出：1080P、60帧\n\n### 4种脚本策划内容方向\n\n| 方向 | 核心 | 体现 | 内容案例 |\n| --- | --- | --- | --- |\n| **讲故事** | 案例/自己/客户 | 专业度、真实感 | 婚礼彩排故事、自己的入行故事、婚礼中的感人故事、客户好评故事 |\n| **教知识** | 专业输出 | 专业度 | 备婚攻略、上台致辞技巧、如何不紧张、备婚早中晚吃什么、父母上台讲什么 |\n| **晒过程** | 实力展示 | 手艺、质量 | 宴会厅搭建过程、菜品制作、婚礼筹备过程、服务流程 |\n| **聊观点** | 共鸣输出 | 立场、态度 | 批判行业乱象、支持某种做法、婚礼要不要怎么做 |\n\n### 内容创作公式\n- 先抛问题 → 再说观点 → 后说理由\n\n### 内容价值三原则\n内容被喜爱的三大原则：有用处、有兴趣、有共鸣。\n\n### 内容方向决策矩阵\n\n| 表达 | 行业结合 | 内容类型 |\n| --- | --- | --- |\n| 教知识 | 解决难题、案例引入、推荐建议、揭秘避坑 | 备婚攻略类 |\n| 讲故事 | 小有成就、苦难经历、成功案例 | 人设打造类 |\n| 晒过程 | 制作过程、任务挑战、事件体验、测评产品、改造对比 | 实力展示类 |\n| 聊观点 | 我要批判、我要站台 | 态度输出类 |\n\n## 拍摄与剪辑标准\n\n### 景别运用\n\n| 景别 | 画面 | 作用 |\n| --- | --- | --- |\n| 远景 | 环境/宽广的镜头 | 渲染气氛，制造气势 |\n| 全景 | 人物全部出现在画面中 | 表现人与环境的关系 |\n| 中景 | 画面卡在膝盖以上 | 用动作表达情绪 |\n| 近景 | 人物胳膊肘以上 | 用表情表达情绪 |\n| 特写 | 某一部位/某一物体 | 细节展示，表达内心感受 |\n\n**拍摄口诀**：推+拉+摇+移+跟+升+降+环\n\n**拍摄技巧**：\n- 不卡关节（脖子、腰关节、腿关节）\n- 尽量少用远景，但不是不用\n- 景别要有切换\n\n### 剪辑流程\n\n1. **审核素材**：哪里有问题点哪里，删除多余废镜头\n2. **加字幕**：字幕拉到三分之一处，黑框白底，字体大小10，编辑错别字\n3. **加标题**：标题不超安全范围，一级用颜色突出重点，标题不写在额头上\n4. **加音乐**：淡入淡出，符合主题\n5. **封面**：选取贴合主题的画面（形象照-半身照），**不在账号上发电话**\n6. **美颜**：不超过预值，保存预设；女生美颜不要运用到男生；全局应用注意男女区别\n7. **导出**：1080P、60帧\n\n### 镜头语言原则\n\n- **镜头是可以说话的** — 不同景别传递不同信息\n- 远景→氛围景别；全景→关系景别；中景→动作景别；近景→表情景别；特写→细节景别\n\n## 直播结构 & 话术体系（新版）【含宴大圣体系补充】\n\n> **宴大圣体系全局安全公式**：安全感 = 人设形象 + 品牌背景 + 好评口碑 + 优质服务\n\n### 宴大圣 · 直播话术安全感四柱\n\n| 维度 | 核心 | 话术要点 |\n|------|------|----------|\n| **人设形象** | 拉近距离、建立信任 | 「欢迎新进来的朋友，扣1认识一下；我是本地宴会酒店负责人，深耕宴会餐饮8年，开播只为给本地粉丝专属福利价。」 |\n| **品牌背景** | 建立实力信任 | 「本地连锁门店，多个不同风格主题宴会厅，千平中央厨房；8年服务超万场宴会；直播去掉中间商，线上套餐和到店场地、菜品、服务完全一致。」 |\n| **好评口碑** | 佐证靠谱 | 「本店员工亲自直播，最懂自家场地菜品；食材当日新鲜采购，后厨可视化；老客户转介绍占门店一半客源。」 |\n| **优质服务** | 消除后顾之忧 | 「套餐全年有效，未使用随时全额可退、无手续费；免费改期3次；全程无隐形消费，合同价即为最终价。」 |\n\n### 宴大圣 · 直播话术四大模块标准\n\n**1. 产品概述**（占10%）\n「本店经营宴会15年，年承办千场婚礼升学宴，老客转介绍过半；一站式套餐包办场地、餐饮、布置，节省时间成本；婚礼/升学/宝宝宴/寿宴/年会全部通用。」\n\n**2. 卖点介绍**（占20%）\n- **场地**：6米层高无柱大厅，水晶吊顶、LED大屏，拍照出片\n- **菜品**：当日新鲜食材，现点现做无预制菜，海鲜肉类品质保障\n- **服务**：一对一专属宴会管家，从接待、彩排到典礼全程跟进\n\n**3. 场景营造**（占30%）\n- **婚礼**：水晶厅搭配花艺灯光，新娘出场氛围感拉满\n- **升学宴**：金榜题名主题布置，仪式感十足\n- **宝宝宴**：卡通主题、小丑表演、甜品台，亲友都满意\n- 一站式全包，客户只管当主角，省心体面\n\n**4. 福利优惠逼单**（占40%）\n「线下12999套餐，直播间直降至9999；定金1000抵3000；前20名赠送灯光使用、餐券、甜品台、管家服务；限量50份，套餐全年有效、免费改期、无手续费，错过不再有。」\n\n### 宴大圣 · 主播痛点话术教学\n\n#### 痛点两大作用\n1. **框定精准人群与使用场景**——让观众第一句话就知道这个直播间在解决他的问题\n2. **放大客户顾虑，制造解决方案需求**——从\"要不要\"变成\"我需要\"\n\n#### 找痛点的3个方法\n1. **站在用户视角反向推导购买需求**\n2. **找到客户理想需求的反义词**（省心←操心、体面←丢面子、划算←花冤枉钱）\n3. **结合办宴场景，放大\"选择差服务\"的负面后果**\n\n#### 痛点3大避坑误区\n1. **不是越多越好**——聚焦核心1-2个即可\n2. **不凭空臆想痛点**——只说客户真实存在的困扰\n3. **不用极端负面话术**——适度共情即可\n\n#### 痛点4种标准表达句式\n| 形式 | 话术示例 |\n|------|----------|\n| 共情式 | 「像很多备婚的姐妹一样，第一次办升学宴不知道从哪下手……」 |\n| 提问式 | 「有没有正在筹备婚礼担心踩坑的？有的扣个1。」 |\n| 认同式 | 「我特别懂你担心办宴麻烦的心情，很多人都有这个顾虑。」 |\n| 叙述式 | 「很多新人之前踩过这些酒店的坑，觉得订之前什么都好，到现场发现不一样。」 |\n\n### 宴大圣 · 新手主播镜头表现力提升\n\n#### 三大维度\n**① 对己（自我心态&镜头习惯）**\n- 多录回放、对镜练习，找到自己上镜好看的角度\n- 自定义美颜参数，提升镜头自信\n- 镜头拟人化，把镜头当成熟人聊天，消除紧张\n- 放平心态，真实接地气比当明星更重要\n\n**② 妆造调整**\n- 妆容遮盖面部短板，提升气色\n- 不同风格主播匹配对应目标客户群体\n- 根据宴会酒店风格、直播间定位定制穿搭妆容\n\n**③ 对标同行**\n- 同行有、本店没有的优势 → **优化补齐**\n- 同行没有、本店独有的优势 → **重点放大宣传**\n- 双方都有的基础优势 → **正常保留，不刻意堆砌**\n\n\n\n### 主播自我训练\n1. **多看录屏，多照镜子**，找到自己最好看的角度\n2. **调好美颜参数**，遮盖缺点\n3. **自信是最大的参数**——放开了讲\n4. **镜头拟人化**：把镜头当成熟悉的人，就像在和朋友聊天\n5. **心理建设**：不要把自己放到很高的位置，你不是明星也不是爱豆，你是帮客户解决问题的\n6. **根据不同场景和人群做造型加法**：不同主播穿透不同人群，货品和场景决定你的妆造风格\n\n### 对标直播间学习法\n- 别人有的你没有的 → **去优化**\n- 别人没有的你有的 → **去放大**\n- 别人有的你也有的 → **去保持**\n\n### 底层逻辑\n- **卖什么产品，直播内容、话术、妆造都围绕这个适用人群来做**\n- 可以设计**统一话术模版**，大家一起播，谁用谁改填空即可\n\n### 直播结构\n\n1. **开场**：今天讲什么宴会，适合谁；指定流程，**有人出镜**（不要光拍婚礼）。\n2. **体验展示**：展示服务、宴会厅的美、管家服务流程。\n3. **看厅**：镜头展示层高、T台、LED、迎宾区、化妆间。\n4. **产品**：套餐档位、适合桌数、赠品和升级项。\n5. **FAQ**：价格、停车、上菜、一站式、档期。**客户问什么都好，只回复\"请留联系电话，安排专业宴会经理联系\"。**\n6. **逼单**：限档期、预约看厅礼、试菜名额。\n7. **下播跟进**：整理名单，30分钟内私信/电话跟进。\n\n### 直播话术 · 痛点体系\n\n#### 痛点的三大作用\n1. **框人群** —— 让你第一句话就知道这个直播间在帮你解决问题\n2. **制造需求** —— 从\"要不要\"变成\"我需要\"\n3. **上升心理** —— 从功能需求上升到心理需求（体面、省心、放心）\n\n#### 痛点的三大误区（不要犯）\n1. **不是越多越好** —— 一个直播间聚焦1-2个核心痛点即可，多了观众记不住\n2. **不要臆想痛点** —— 你没调研过的痛点，说出来客户觉得你不懂他\n3. **不是越痛越好** —— 过度制造焦虑会让客户反感，要适度\n\n#### 找痛点的方法\n1. **用户思维找买点**：站在客户角度想，他办这场宴最怕什么\n2. **买点的反义词**：省心 ← 操心、体面 ← 丢面子、划算 ← 花冤枉钱\n3. **反义词带来的坏处+场景上升心理**：操心 → 婚礼当天还要自己盯上菜 → 没空招呼亲戚 → 丢面子\n\n#### 痛点的4种表达形式\n| 形式 | 话术示例 |\n| --- | --- |\n| 共情式 | 「和我一样，第一次给孩子办升学宴不知道从哪下手……」 |\n| 提问式 | 「有没有觉得办宴会又麻烦又费钱的？有的扣个1。」 |\n| 认同式 | 「我知道大家担心什么——订之前什么都好，到了现场发现和说的不一样。」 |\n| 叙述式 | 「很多人都说，在宜春办一场体面又不贵的宴会太难了……」 |\n\n### 直播话术 · 安全感塑造（买不买都先信你）\n\n**安全感 = 人设 + 品牌背景 + 好评口碑 + 优质服务**\n\n| 维度 | 话术参考 |\n| --- | --- |\n| **人设形象** | 「今天有很多新朋友第一次刷到我直播间，简单介绍一下自己，我是XX宴会酒店的负责人，做宴会餐饮已经8年了，今天开播就是想让更多宜春的朋友知道我们家，也给大家争取到了门店从来没有过的福利价。」 |\n| **品牌背景** | 「我们家是专门做一站式宴会的，宜春有5家门店，40多个不同风格的主题宴会厅，8年来服务了上万场宴会。现在做直播不是因为生意不好，是想跳过中间商，直接把最实惠的价格给到大家。直播间看到的所有套餐，和你到门店订的是一模一样的场地、一模一样的菜品、一模一样的服务。」 |\n| **好评口碑** | 「我没请大网红也没请专业主播，就是自己酒店的员工在直播，因为我们最了解自己的场地和菜品，自己给自己代言才最靠谱。我们给客户用的是什么标准，直播间就承诺什么标准。食材当天采购、现做现上、无预制菜。开酒店靠的就是口碑，老客户转介绍占了一半的生意。」 |\n| **优质服务** | 「今天所有拍的套餐，一年内有效，未使用随时可退，没有任何手续费。支持免费改期3次，婚期变动、升学宴时间调整，提前7天说就行。全程无任何隐形消费，合同上写多少就是多少。」 |\n\n### 直播话术框架 A：转化型（6段式）\n\n| 环节 | 占比 | 核心 | 解释 |\n| --- | --- | --- | --- |\n| 场景营造 | 5% | 模拟真实场景，激发需求 | 结合婚宴/升学宴/宝宝宴/寿宴/年会等真实场景，对号入座 |\n| 同类品比对 | 15% | 客观对比，突出优势 | 列举本地常见竞品的痛点，不贬低对手，突出自家一体优势 |\n| 卖点介绍 | 30% | 分模块输出核心卖点 | 场地硬件、餐饮品质、服务标准，切镜头展示实景 |\n| 搭配推荐 | 20% | 基础套餐+升级选项 | 不同预算、不同人数灵活搭配，增强性价比感知 |\n| 福利优惠 | 15% | 紧迫感刺激下单 | 定金膨胀、限量名额、专属赠送、保价承诺 |\n| 卖点强调 | 15% | 重复核心卖点加深印象 | 重新强调最不可替代的3个卖点，加大下单决心 |\n\n### 直播话术框架 B：留人型（4段式）\n\n| 环节 | 占比 | 核心 |\n| --- | --- | --- |\n| 产品概述 | 10% | 用数据建立初步信任，自然引出详细产品 |\n| 卖点介绍 | 20% | 让观众感觉\"花得值\" |\n| 场景营造 | 30% | 带看厅、模拟体验、精准对应人群 |\n| 福利优惠 | 40% | \"现在订最划算，错过就亏大了\"，推动立即下单 |\n\n### 直播话术示例（宴会通用版）\n\n> **产品概述**：「这个套餐真的卖爆了！办宴会一定要认准白金汉宫，我们在宜春做了8年宴会，光去年就办了900多场。很多人说办宴会麻烦又费钱，今天这个套餐从场地到餐饮到布置一站式搞定，能帮你省至少一半的时间和钱。不管是婚礼、升学宴、宝宝宴、寿宴还是公司年会，这个套餐都能用。」\n>\n> **卖点介绍**：「它用的是我们卖得最好的无柱主题厅，层高足足X米，全场没有一根柱子，360度无死角。搭水晶吊顶、花艺布景还是LED大屏，效果直接拉满。（助播切厅全景镜头）而且菜品全部当天新鲜采购、现做现上、拒绝预制菜。每个订单配专属宴会管家，从订厅到彩排到当天统筹，全程一对一。」\n>\n> **场景营造**：「来看一下我们上个月办的婚礼现场效果——这个厅搭配白色花艺和暖光灯光，新娘从楼梯走下来，全场都看呆了。如果是升学宴，可以布置成金榜题名主题，背景板上印孩子的名字和照片，特别有仪式感。你想想，当天你做主角，所有事交给我们，客人吃得好玩得好，多有面子。」\n>\n> **福利优惠**：「平时这个套餐卖XXXX，今天直播间只要XXXX！今天拍定金1000抵3000，相当于再省2000。前XX名下单再加送价值XXX的大礼包。套餐一年有效，未使用随时可退，免费改期3次。今天过了就没了，错过真的要再等一年。」\n\n### 直播常见情况应对\n\n| 情况 | 话术要点 |\n| --- | --- |\n| 刚开播人少 | 「欢迎新进来的朋友，今天跟大家聊聊在宜春办宴会怎么省心省钱。刚进来的打1让我认识一下。」 |\n| 有人问价格 | 不直接报最低价，「来我们直播间就对了，今天给大家准备了门店没有的福利价。」 |\n| 有人说贵 | 上竞品对比+拆解套餐价值，「我们无预制菜、现做现上、厅全部配齐了大屏和灯光」 |\n| 有人说远了/不方便 | 「我们在宜春有5家门店，总有一家离你近的，具体你私信我帮你推荐」 |\n| 有人要走 | 拉回来：「别走，刚说的福利还在，再等30秒给大家上最后一个名额」 |\n| 没成交沉默期 | 重复卖点值：「记住三个数字——无预制菜、无隐形消费、一年可退，错过今天就没有了」 |\n\n## 内容置顶策略\n\n- **第一条**：酒店宣传片\n- **第二条**：企业优势（3-5条并成一条：菜品+硬件+客户见证+服务）\n- **第三条**：当下活动政策利好\n\n## 采访话术（仪式刚结束心情愉悦时）\n\n- \"对我们的菜品满意吗？\"\n- \"服务满意吗？\"\n- \"对宴会厅满意吗？\"\n- \"如果你朋友结婚，你愿意推荐朋友来吗？\"\n\n## SEO关键词策略\n\n1. 地名（宜春）\n2. 品类名（婚宴、升学宴、宴会厅）\n3. 地名+品类名（宜春婚宴、宜春宴会厅）\n4. 自己账号名字\n5. 根据作品选择\n- 以大带小（以地名带品类）拉高关键词流量\n- 统一名词：如\"白金汉宫婚礼堂\"\n\n## 抖+投放技巧\n\n1. **选品**：抛出平均播放的作品3条起投\n2. **投放目标**：\n   - 2000粉以下→投粉丝量\n   - 2000粉以上→投点赞评论\n3. **投放时间**：4-6点开始起投，投6小时，看跑完数据\n4. **优胜作品**：单投300元，投点赞评论\n5. **同步投转化**：投100元\n6. **最优视频**：3条中表现最优的有皇冠标识，后续就单投\n\n## 素材库建设\n\n### 素材分类\n\n- 宴会厅\n- 菜品\n- 客户评价\n- 服务\n- 小宴会\n\n### 管理机制\n\n- 每个岗位选一位负责人收集素材\n- **素材不要任何加工**，所有竖屏拍摄\n- 素材重点要转移到服务人员和酒店身上，而不是客户\n- 搭建个人+团队素材库，不时之需\n- 可以专人拍素材\n\n## 内容不能犯的错误\n\n- 不要天天发低价和甩卖。\n- 不要只发空厅照片，要说适合什么客户。\n- 不要只讲\"豪华\"，要讲客户能感知的价值。\n- 不要只拍舞美，不拍服务、菜品、停车、迎宾、管家。\n- 不要把所有门店内容做成一个模板。\n- **不要只在账号上发电话**，一定是引导留联系方式。\n- **不要直接发客户照片为主**，素材重点在服务人员和酒店身上。\n\n## 常用内容主题\n\n- \"升学宴怎么订不踩坑\"\n- \"30桌婚宴适合哪个厅\"\n- \"为什么宴会不能只看价格\"\n- \"白金汉宫无预制菜，宴席现做现上\"\n- \"小宴也可以办得很体面\"\n- \"不社死的订婚宴怎么做\"\n- \"回门宴不只是吃饭，是新娘的生活展览\"\n- \"年会不用额外租大屏音响，宴会厅直接配齐\"\n- \"婚礼上父母上台致辞紧张怎么办\"\n- \"备婚一天早中晚吃什么\"\n- \"宜春最适合做升学宴的宴会厅\"\n- \"来白金汉宫办宴席，停车不用愁\"",
+                "scene": "线上运营规则",
+                "keywords": "线上运营规则,线上,直播,门店,复盘,服务,抖音,升学宴,宴会厅,婚宴,客户,白金汉宫,体验"
+          },
+          {
+                "id": "ref_full_08",
+                "source": "内置完整资料",
+                "category": "销售话术",
+                "title": "销售服务与体验地图",
+                "body": "# 销售服务与体验地图\n\n## 销售流程\n\n开发线索 → 加微信/电话破冰 → 邀约到店 → 看厅接待 → 需求确认 → 产品推荐 → 报价成交 → 宴前服务 → 宴中交付 → 宴后回访 → 转介绍/会员留存。\n\n## 宴会管家职责\n\n- 完业绩。\n- 追客户。\n- 做服务。\n- 加微信。\n- 去拜访。\n- 盘客户。\n- 转介绍。\n- 做宣传。\n- 开直播。\n\n## 常见异议处理原则\n\n| 客户异议 | 判断 | 处理方向 |\n| --- | --- | --- |\n| 太贵了 | 客户还没理解价值 | 不急降价，先对比无预制菜、灯光大屏、管家、一站式、省心程度 |\n| 我再考虑 | 缺少下一步理由 | 给档期、看厅、试菜、活动节点和真实案例 |\n| 别家送得多 | 客户被赠品吸引 | 解释赠品质量、审美、实际使用价值和服务交付 |\n| 小宴没必要来宴会中心 | 客户只想到桌数 | 强调小宴也要体面、省心、拍照好看、亲友感受好 |\n| 上菜会不会慢 | 担心体验 | 讲宴会管家控节奏、现做现上、避免久等和冷菜 |\n| 有没有预制菜 | 关注健康 | 强调无预制菜、现做现上、支持试菜 |\n| 大屏音响是否收费 | 担心隐形消费 | 强调全厅标配灯光舞美、LED大屏、专业音响和麦克风 |\n\n## 不降价成交话术结构\n\n1. 先认同：理解客户要控制预算。\n2. 再重构：不是只比一桌多少钱，而是看这场宴是否省心、体面、好吃、好看、服务稳定。\n3. 再举证：无预制菜、现做现上、宴会管家、LED大屏、灯光音响、一站式服务、停车。\n4. 再选择：给不同档位或升级项，不直接打折。\n5. 推下一步：约看厅、试菜、锁档期。\n\n## 服务体验地图\n\n| 节点 | 客户情绪 | 设计动作 | 传播点 |\n| --- | --- | --- | --- |\n| 咨询 | 不确定、怕踩坑 | 快速问清宴会类型、桌数、预算、风格、日期 | 发门店/厅型推荐图 |\n| 到店 | 期待又担心 | 门口迎接、停车指引、茶水、看厅路线 | 入门打卡背景 |\n| 看厅 | 想象现场效果 | 按客户宴会类型讲场景，不只讲面积 | 站在T台拍一段 |\n| 试菜 | 关注口味和健康 | 讲无预制菜、现做现上、招牌菜 | 菜品短视频 |\n| 下定 | 怕后悔 | 给清晰清单、档期确认、服务承诺 | 下定仪式照 |\n| 宴前 | 怕遗漏 | 建群、流程表、人员分工、彩排提醒 | 电子邀请函 |\n| 宴中 | 看服务稳定性 | 管家控场、上菜节奏、照顾主家和重要宾客 | 高光环节视频 |\n| 离店 | 情绪最高点 | 伴手礼、合影、感谢卡、下一次权益 | 全家福/师生合影 |\n| 宴后 | 回味和评价 | 3天回访、7天发照片视频、邀请评价 | 朋友圈素材包 |\n\n## 情绪惊喜设计\n\n- 升学宴：录取通知书合影台、老师感谢卡、父母寄语、少年启程主题音乐。\n- 回门宴：新娘成长照片、娘家欢迎词、家乡元素、给父母的一封信。\n- 订婚宴：两家人合影墙、定情礼、安静祝福环节、不社死主持。\n- 宝宝宴：宝宝成长墙、亲友祝福卡、全家福拍摄点。\n- 商务宴：关键人物座次、公司LOGO大屏、流程提醒、茶歇服务。",
+                "scene": "销售服务与体验地图",
+                "keywords": "销售服务与体验地图,销售服务,体验地图,销售,服务,体验,客户,直播,门店,升学宴,婚宴"
+          },
+          {
+                "id": "ref_full_09",
+                "source": "内置完整资料",
+                "category": "宴会产品",
+                "title": "宴会产品与增长方法",
+                "body": "# 宴会产品与增长方法\n\n## 2026核心战略：只做增长有关的事\n\n### 增长四大关键\n\n| 关键维度 | 具体拆解 |\n| --- | --- |\n| 订单增加 | 品牌瀑光度、提升成交率、深挖转介绍、老客二销率、渠道多样化 |\n| 品牌瀑光度 | 公益行为、会销活动、深耕线上、圈层渗透、节日热度、客户见证 |\n| 提升成交率 | 制定接待流程、升级话术工具、一周一次训练、一月一次考核、一季一次暗访、半年一次升级接待 |\n| 渠道多样化 | 线上+线下+异业合作+转介绍全渠道拓客 |\n\n### 门店增收三驱\n\n| 增收方向 | 具体动作 |\n| --- | --- |\n| 餐标提升 | 套餐升级、菜品溢价、酒水二销、加菜项设计 |\n| 场布二销 | 灯光升级、主题布置升级、合影区升级、甜品台/伴手礼加购 |\n| 门店周边 | 宴会厅下午茶/体验日/打卡活动、会员专属小宴、非宴时段场地租赁 |\n\n### 管理信条\n\n- 坚持做客户采访——越信谁越检查谁，因为越易偷懒\n- 奖励≠激励——奖励给做到的，激励给增长的\n- 2026只做增长有关的事\n- 长期保持战斗状态：只有打出精彩，没有等出的辉煌\n- 做不到、没能力、没客资——时刻想怎么做才有能力、客资、能力\n\n### 百日攻坚核心逻辑\n\n以近100天的攻坚周期，聚焦当地婚宴和小宴订单，从团队状态激发到整体活动设计、流程把控、拓客、引流、转化、成交、转介、二销等，形成一套有效闭环，达到：冲刺短期营收、锁定远期婚宴、盘活闲置宴会厅、提升复购和转介、抢占本地宴会市场、提升品牌知名度。\n\n---\n\n## 影响企业增长的五大因素\n\n| 因素 | 表现 | 对策 |\n| --- | --- | --- |\n| 1. 团队状态 | 起伏跌宕，发挥不稳定 | 每日晨会状态激活、每周团队活动、设定激情目标 |\n| 2. 高层协作 | 内耗严重，缺乏领导力 | 明确的权责分工、月度战略对齐会、一把手兜底机制 |\n| 3. 线上运作 | 没跑通，重视程度不够 | 组建线上团队、专人专岗、每店一个内容输出体系 |\n| 4. 经营管理 | 核心干部缺乏战略执行和管理能力 | 一周一次训练、一月一次考核、一季一次暗访 |\n| 5. 专业技术 | 缺乏行之有效的营销策略 | 外部学习输入+内部实战沉淀+数据复盘驱动迭代 |\n\n---\n\n## 餐饮酒店百日增长三大转变\n\n### 转变一：从单点到立体\n\n| 旧模式 | 新模式 |\n| --- | --- |\n| 卖宴会厅 | 卖客户体验感和情绪价值 |\n| 卖宴会菜 | 卖菜品呈现+服务仪式+故事记忆点 |\n| 卖婚庆布置 | 卖一场让亲友都羡慕的婚礼 |\n\n> 核心：把\"我们有什么\"变成\"客户能感受到什么\"\n\n### 转变二：从\"零售\"到\"批发\"\n\n| 旧模式 | 新模式 |\n| --- | --- |\n| 一对一和客户谈判 | 一对多宴会酒店立体展示 |\n| 每次接待从零开始讲 | 用看厅日/体验日/直播/短视频批量教育客户 |\n| 销售个人能力决定成败 | 流程+活动+工具降低对人依赖 |\n\n> 核心：人解决不了的事就用流程和活动来解决\n\n### 转变三：从短期到长期\n\n| 旧模式 | 新模式 |\n| --- | --- |\n| 一单是一单 | 一个客户的多宴种需求+身边资源 |\n| 成交即结束 | 宴后回访+会员群+转介绍机制+老客二销 |\n| 等客户再找我 | 主动维护客户关系，抢占客户时间 |\n\n> 核心：深度链接好一个精准客户，就能产生客户的终身价值和持续收益\n\n### 金句墙（可做晨会口号、朋友圈文案、团队激励）\n\n- 如果客户不在你的计划内，那么你就在客户的计划外\n- 设定热血沸腾的目标，设定超有感觉的奖励\n- 多曝光——一定组建线上团队\n- 重视客户体验，服务是因，营销是果\n- 保持客户粘度，抢占客户时间就是抢机会\n- 长期保持战斗状态，只有打出精彩，没有等出的辉煌\n- 做不到、没能力、没客资——时刻想怎么做才有能力、客资、能力\n- 2026只做增长有关的事\n\n---\n\n## 产品设计总原则\n\n- 告别标准化产品，做可溢价的宴会产品。\n- 每个宴会产品都要有说明书，不只报桌价。\n- 产品类别要多，婚宴、小宴、商务宴、会议宴、升学宴都要分支细分。\n- 限制等于浪费，不要让宴会厅闲置，要通过场景重构做小宴、会议、体验日、打卡活动。\n- 不要盲目第三方合作。第三方合作必须能带来精准客源或提升交付，不要为了热闹而合作。\n- 每个门店活动要不一样，要适配门店厅型、商圈、人群和停车条件。\n\n## 私人定制服务六要素\n\n1. 礼物：伴手礼、纪念物、感谢卡、主题小礼。\n2. 布置：迎宾区、拍照区、主桌、仪式区、桌卡。\n3. 文案：主题词、主持词、感谢词、电子邀请函、朋友圈文案。\n4. 音乐：迎宾、入场、仪式、高光、离场音乐。\n5. 主持：不社死、安静、有温度、能讲客户故事。\n6. 传播：拍照点、短视频点、客户愿意发朋友圈的素材。\n\n## 主要宴会产品方向\n\n| 宴会类型 | 核心价值 | 设计重点 |\n| --- | --- | --- |\n| 婚宴 | 体面、省心、审美、仪式感 | 厅型风格匹配、婚礼主题、亲友体验、流程统筹 |\n| 升学宴 | 家长有面子、孩子有仪式、老师被感谢 | 金榜题名打卡、谢师环节、成长回顾、状元赞助 |\n| 谢师宴 | 尊重老师、表达感恩 | 老师主桌礼遇、学生感谢词、师生合影、纪念礼 |\n| 回门宴 | 娘家归属感、生活展览 | 新娘成长故事、家乡元素、娘家人欢迎仪式 |\n| 订婚宴 | 两家正式见面、不社死的浪漫 | 七夕节点、安静高级、家人祝福、定情礼 |\n| 宝宝宴 | 家庭喜悦、亲友见证 | 宝宝成长墙、祝福卡、亲子拍照区 |\n| 生日宴/寿宴 | 被重视、被祝福 | 人生故事、亲友祝福、仪式蛋糕、全家福 |\n| 乔迁宴 | 新生活、新关系 | 新家故事、邻里亲友、祝福仪式 |\n| 商务宴/年会 | 面子、效率、设备省心 | 舞台灯光、LED大屏、麦克风、流程控场 |\n| 会议宴/发布会 | 专业、转化、场地价值 | 会议+用餐+茶歇+大屏+拍摄一站式 |\n\n## 6-8月增长打法\n\n### 6月：升学宴蓄水+端午家宴引流\n\n- 目标：获客、加微信、锁定升学宴意向、婚宴淡季看厅。\n- 产品：状元预订礼、端午团圆宴、谢师宴早鸟套餐、婚宴淡季体验日。\n- 动作：每周3场直播；建立升学宴家长群；拜访培训机构、摄影馆、鲜花店、礼服店；周末看厅日。\n- 指标：新增线索150-300组；加微信率80%以上；锁定意向20-40单。\n\n### 7月：升学宴爆发+谢师宴成交战\n\n- 目标：升学宴主战场，成交放大。\n- 产品：金榜题名宴、谢师感恩宴、状元赞助计划、小型家庭庆功宴。\n- 动作：每日直播；每类产品一页说明书；每场设计进门打卡、宴中祝福、离店伴手礼；销售每日训练。\n- 指标：升学宴成交翻倍；到店成交率35%-50%；转介绍不少于15%。\n\n### 8月：七夕订婚+小宴会员+秋冬婚宴储备\n\n- 目标：升学宴收尾，小宴补位，锁秋冬婚宴。\n- 产品：七夕订婚宴、回门宴生活展览、小而美生日宴/宝宝宴、商务会议宴、婚宴秋冬锁档计划。\n- 动作：8月19日前后七夕订婚季；每场宴后3天回访、7天发照片视频、30天邀请进会员群；外拓企业商会培训机构。\n- 指标：七夕/订婚宴线索80-150组；企业拜访50家；储备9-12月婚宴客户。\n\n## 产品说明书模板\n\n每次设计产品时至少包含：\n\n- 产品名称：\n- 适合人群：\n- 推荐门店/宴会厅：\n- 建议桌数：\n- 推荐套餐：\n- 核心卖点：\n- 私人定制六要素：\n- 情绪高光：\n- 传播点：\n- 可溢价升级：\n- 销售一句话：\n- 朋友圈文案：",
+                "scene": "宴会产品与增长方法",
+                "keywords": "宴会产品与增长方法,宴会产品,增长方法,增长,线上,客户,门店,宴会厅,体验,婚宴,复盘,服务,直播,销售,升学宴"
+          },
+          {
+                "id": "brand-core",
+                "source": "内置",
+                "category": "品牌门店",
+                "title": "白金汉宫品牌核心",
+                "scene": "全部场景",
+                "keywords": "白金汉宫,宜春,宴会中心,无预制菜,一站式,宴会管家",
+                "body": "白金汉宫国际宴会中心是宜春本地宴会品牌，核心资源包括5家门店、40余个主题宴会厅、无预制菜、现做现上、一站式服务、宴会管家、LED大屏、演唱会级灯光舞美、停车和充电桩等。输出必须落到门店、岗位动作、客户话术、平台动作或复盘指标。"
+          },
+          {
+                "id": "store-map",
+                "source": "内置",
+                "category": "品牌门店",
+                "title": "五店定位速查",
+                "scene": "门店推荐,销售话术,选题",
+                "keywords": "铜锣湾,财富中心,润达国际,迎宾馆,青龙商厦,停车",
+                "body": "铜锣湾店：500平方米户外草坪、大体量、多厅、1000+停车位，适合草坪婚礼、升学宴、大型婚宴、年轻派对。财富中心店：10米层高、高级艺术感、商务属性，适合高级婚礼、发布会、企业年会、沉浸式宴会。润达国际店：商圈流量、2000+停车位、小宴灵活，适合宝宝宴、生日宴、家庭宴、升学小宴。迎宾馆店：水晶风、法式庄园、体面感，适合体面型婚宴、订婚宴、重要家庭宴。青龙商厦店：市中心、欧式宫廷、无柱大厅，适合欧式婚礼、大型宴请、长辈满意型宴席。"
+          },
+          {
+                "id": "hall-recommendation",
+                "source": "内置",
+                "category": "品牌门店",
+                "title": "宴会厅推荐逻辑",
+                "scene": "知识问答,门店推荐,销售回复",
+                "keywords": "选厅,厅型,草坪,户外,10米层高,欧式宫廷,无柱,水晶,法式庄园,停车",
+                "body": "客户要草坪、户外、派对，优先铜锣湾店；客户要10米层高、高级艺术感，优先财富中心店梦起云岚厅；客户要欧式宫廷、无柱、大厅，优先青龙商厦店维纳斯厅；客户要仙气水晶、法式庄园，优先迎宾馆店；客户要灵活小宴、商圈便利，优先润达国际店；客户特别看重停车，优先润达国际店、铜锣湾店、财富中心店。"
+          },
+          {
+                "id": "core-selling-points",
+                "source": "内置",
+                "category": "品牌门店",
+                "title": "核心卖点表达",
+                "scene": "知识问答,销售回复,内容创作",
+                "keywords": "无预制菜,一站式,硬件完整,厅型丰富,服务可控,LED,灯光音响",
+                "body": "无预制菜表达为当天采购、现做现上，强调菜品安心和宴席体面。一站式省心表达为场地、餐饮、布置、主持、摄影摄像、管家服务统一承接。硬件完整表达为LED大屏、灯光音响、舞美配套，减少客户额外租赁成本。厅型丰富表达为5家门店、不同风格、不同桌数，能按客户需求推荐。服务可控表达为宴会管家全程跟进，从看厅到宴后回访形成闭环。"
+          },
+          {
+                "id": "growth-principles",
+                "source": "内置",
+                "category": "宴会产品",
+                "title": "增长判断框架",
+                "scene": "经营增长,产品设计,复盘",
+                "keywords": "订单,餐标,场布二销,门店周边,增长",
+                "body": "增长只看四个结果：订单增加、餐标提升、场布二销、门店周边。产品要回答客户为什么现在下单、为什么选我们；线上要解决触达和留资；销售要解决到店和成交；服务要解决评价、转介绍和复购；组织要解决谁负责、怎么检查、怎么复盘。"
+          },
+          {
+                "id": "banquet-products",
+                "source": "内置",
+                "category": "宴会产品",
+                "title": "重点宴会产品方向",
+                "scene": "内容创作,产品说明,销售",
+                "keywords": "婚宴,升学宴,谢师宴,宝宝宴,生日宴,订婚,商务宴",
+                "body": "婚宴购买理由是体面、省心、现场效果、好日子档期，可升级草坪仪式、灯光舞美、摄影摄像、主持、婚礼MV。升学宴购买理由是金榜题名、家长体面、老师感谢，可升级状元门、感谢卡、纪念册、合影墙、跟拍素材。宝宝宴/生日宴主打家庭仪式感和小朋友体验，可升级主题布置、互动、甜品台、全家福。商务/会议宴主打专业省事和品牌露出，可升级LOGO大屏、茶歇、流程主持、座次服务。"
+          },
+          {
+                "id": "custom-six-elements",
+                "source": "内置",
+                "category": "宴会产品",
+                "title": "私人定制六要素",
+                "scene": "知识问答,产品设计,内容创作,销售回复",
+                "keywords": "私人定制,礼物,布置,文案,音乐,主持,传播,升单,溢价",
+                "body": "私人定制六要素是礼物、布置、文案、音乐、主持、传播。设计宴会产品时，不只卖餐标，要把客户的家庭情绪、仪式感、现场传播和可升级项目讲清楚。销售可以把六要素拆成基础包含项和可升级项，用来提升客单价和场布二销。"
+          },
+          {
+                "id": "sales-flow",
+                "source": "内置",
+                "category": "销售话术",
+                "title": "销售服务流程",
+                "scene": "销售回复,员工培训",
+                "keywords": "咨询,加微信,邀约,到店,看厅,报价,下定,宴后回访",
+                "body": "销售不是单点谈单，而是从线索到宴后回访的连续流程：咨询、加微信、邀约、到店、看厅、报价、下定、宴前确认、宴中服务、宴后回访、评价转介绍。咨询阶段问清宴会类型、桌数、预算、日期、风格，发门店/厅型推荐；看厅要帮客户想象现场；下定要清单化承诺；宴后3天回访、7天发素材、30天会员邀请。"
+          },
+          {
+                "id": "service-map",
+                "source": "内置",
+                "category": "销售服务",
+                "title": "服务体验地图",
+                "scene": "知识问答,销售培训,服务流程",
+                "keywords": "咨询,到店,看厅,试菜,下定,宴前,宴中,宴后,回访,转介绍",
+                "body": "咨询阶段要快速建立信任，问清宴会类型、桌数、预算、日期、风格，发门店/厅型推荐；到店阶段做停车指引、门口迎接、茶水、看厅路线；看厅阶段按宴会类型讲场景，不只讲面积和价格；试菜阶段强化无预制菜、现做现上、招牌菜和分量；下定阶段清单化承诺、确认档期和服务承诺；宴前建群、流程表、人员分工和彩排提醒；宴中管家控场、上菜节奏、照顾主家和重点宾客；宴后3天回访、7天发素材、30天会员邀请。"
+          },
+          {
+                "id": "price-objection",
+                "source": "内置",
+                "category": "客户异议",
+                "title": "不降价成交话术结构",
+                "scene": "问价格,砍价,销售回复",
+                "keywords": "贵,优惠,便宜,价格,降价,预算",
+                "body": "客户关注价格很正常。回应时先承认，再把价格拆成场地、菜品、灯光音响、LED大屏、管家服务、布置等价值项；用无预制菜、现做现上、一站式省心和真实案例建立信任；给客户可选择的升级项或调整项，而不是直接降价；最后用档期、名额、体验日、试菜或看厅礼推动下一步。"
+          },
+          {
+                "id": "online-rules",
+                "source": "内置",
+                "category": "短视频脚本",
+                "title": "线上运营第一原则",
+                "scene": "选题,短视频,直播,朋友圈",
+                "keywords": "抖音,视频号,小红书,朋友圈,直播,留资",
+                "body": "线上不是宣传部，线上就是门店。每条内容都要服务一个转化动作：曝光、咨询、留资、加微信、到店、成交、复购或转介绍。抖音负责同城曝光和线索，视频号负责熟人传播和信任背书，小红书负责审美种草和攻略搜索，美团/大众点评负责搜索承接和评价资产，私域微信负责跟进成交和复购转介绍。"
+          },
+          {
+                "id": "material-library",
+                "source": "内置",
+                "category": "短视频脚本",
+                "title": "素材库分类",
+                "scene": "知识问答,选题,内容创作",
+                "keywords": "素材,空镜,服务过程,菜品,客户见证,门店资源,拍什么",
+                "body": "素材库可以分成5类：宴会厅空镜，包括全景、T台、灯光、LED、迎宾区、化妆间；服务过程，包括管家巡台、上菜、摆盘、迎宾、彩排；菜品素材，包括招牌菜、现做现上、热菜出品；客户见证，包括评价、合影、现场高光、宴后反馈；门店资源，包括停车、充电桩、草坪、商圈、层高、无柱大厅。"
+          },
+          {
+                "id": "short-video-structure",
+                "source": "内置",
+                "category": "短视频脚本",
+                "title": "短视频通用结构",
+                "scene": "短视频,金辉口播,选题",
+                "keywords": "开头,痛点,证明,结尾,私信,留档期",
+                "body": "短视频结构：开头3秒内抓住本地客户，点出宴会类型、痛点或门店亮点；中段展示厅型、菜品、服务、硬件、案例或避坑知识；证明部分用客户现场、真实服务、数据、对比或评价；结尾必须引导评论区、私信、留档期、预约看厅，不能空泛收尾。金辉单人自拍脚本默认只输出纯口播文字，用「」括起来，不加分镜、不加时长、不写画面说明。"
+          },
+          {
+                "id": "live-structure",
+                "source": "内置",
+                "category": "直播话术",
+                "title": "直播话术结构",
+                "scene": "直播,内容创作",
+                "keywords": "直播,看厅路线,福利,下播跟进",
+                "body": "直播结构：开场建立人设和安全感；痛点切入，让客户觉得说的是我；看厅路线和场景营造；产品介绍，重复无预制菜、一站式、硬件配套三大卖点；常见问题应对；福利优惠和逼单；下播后30分钟内跟进留资。"
+          },
+          {
+                "id": "data-diagnosis",
+                "source": "内置",
+                "category": "数据复盘",
+                "title": "数据诊断逻辑",
+                "scene": "晨会,复盘,训练",
+                "keywords": "线索,加微信,到店,成交,客单价,转介绍",
+                "body": "线索多、加微信少，通常是承接慢或私信话术弱，要训练私信破冰和留资钩子。加微信多、到店少，是邀约理由不强，要训练看厅邀约、档期紧迫感、看厅礼。到店多、成交少，是价值表达或逼单弱，要训练产品说明书、报价逻辑、异议处理。成交多、金额低，是升级项弱，要训练布置、摄影、主持、传播升级包。成交后无转介绍，是宴后动作弱，要强制3天回访、7天交素材、30天会员邀请。"
+          }
+    ];
+
+    var TEMPLATES = [
+      { title: "金辉口播", body: "请为白金汉宫【门店/宴会类型】写【数量】条金辉单人自拍视频口播。只输出纯口播文字，用「」括起来，不加分镜、时长、画面说明。每条要有本地客户痛点、门店真实卖点、结尾留资动作。" },
+      { title: "销售回复", body: "请根据客户微信原话生成白金汉宫销售回复。先判断客户意图和销售阶段，再给亲切版、稳重版、推进成交版。回复要自然口语化，不盲目降价，要追问宴会类型、日期、桌数、预算、区域、风格偏好，并引导到店看厅或确认档期。" },
+      { title: "选题策划", body: "请基于平台、业务目标、宴会类型、门店和今日素材，为白金汉宫生成今日推荐选题。每个选题包含适合平台、标题、开头钩子、核心内容方向、可拍素材建议和结尾引导动作。" },
+      { title: "宴会产品说明书", body: "请为【宴会类型】设计白金汉宫宴会产品说明书，包含产品名称、适合人群、推荐门店/宴会厅、建议桌数、套餐档位、核心卖点、私人定制六要素、情绪高光环节、可溢价升级项、销售话术、线上发布文案。" },
+      { title: "直播脚本", body: "请为白金汉宫【门店/宴会类型/套餐】设计一场直播脚本，包含开场安全感、痛点切入、看厅路线、产品介绍、三大卖点重复、常见问题应对、福利逼单、下播跟进清单。话术要口语化，能直接照着播。" },
+      { title: "数据诊断", body: "请根据以下销售/平台数据做诊断：【粘贴数据】。输出最大问题、销售数据诊断、平台数据诊断、明天晨会训练、明天立刻改的3件事。判断基于线索、加微信、到店、成交、成交额、转介绍、曝光、咨询等指标。" }
+    ];
+
+    var MODEL_PRESETS = {
+      "openai": { label: "OpenAI（推荐）", baseUrl: "https://api.openai.com/v1", modelName: "gpt-4o-mini" },
+      "deepseek": { label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", modelName: "deepseek-chat" },
+      "qwen": { label: "通义千问", baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", modelName: "qwen-plus" },
+      "kimi": { label: "Kimi", baseUrl: "https://api.moonshot.cn/v1", modelName: "kimi-k2-0711-preview" },
+      "custom": { label: "自定义", baseUrl: "", modelName: "" }
+    };
+
+    var editKbId = null;
+    var editBuiltInKbId = null;
+    var kbDraftPreview = null;
+    var kbDraftSourceBody = "";
+
+    function qs(id) { return document.getElementById(id); }
+    function getConfig() {
+      return JSON.parse(localStorage.getItem("bjh_config") || "{}");
+    }
+    function setConfig(config) {
+      localStorage.setItem("bjh_config", JSON.stringify(config));
+      updateConfigStatus();
+    }
+    function getUserKb() {
+      return JSON.parse(localStorage.getItem("bjh_user_kb") || "[]");
+    }
+    function setUserKb(items) {
+      localStorage.setItem("bjh_user_kb", JSON.stringify(items));
+      renderKbList();
+    }
+    function getDisabledKbIds() {
+      return JSON.parse(localStorage.getItem("bjh_disabled_kb_ids") || "[]");
+    }
+    function setDisabledKbIds(ids) {
+      localStorage.setItem("bjh_disabled_kb_ids", JSON.stringify(Array.from(new Set(ids))));
+      renderKbList();
+    }
+    function rawAllKb() {
+      return BUILT_IN_KB.concat(getUserKb());
+    }
+    function allKb() {
+      var disabled = getDisabledKbIds();
+      return rawAllKb().filter(function(item) { return disabled.indexOf(item.id) < 0; });
+    }
+    function uid() {
+      return "kb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+    }
+    function escapeHtml(str) {
+      return String(str || "").replace(/[&<>"']/g, function(ch) {
+        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+      });
+    }
+    function highlightText(str) {
+      return escapeHtml(str);
+    }
+    function sectionClass(title) {
+      if (/本地生成|AI 生成|需要配置|调用失败/.test(title)) return "mode";
+      if (/回答|直接回答|可直接发送|成品内容|今日推荐|推荐选题|微信回复/.test(title)) return "main";
+      if (/员工怎么用|建议补问|下一步动作|结尾引导|核心方向|可拍素材|客户意图|销售阶段|回复风格|怎么拍/.test(title)) return "action";
+      if (/命中的知识|参考知识|资料来源|本次参考/.test(title)) return "source";
+      if (/没有|失败|风险|提醒/.test(title)) return "warning";
+      return "";
+    }
+    function formatGeneratedContent(content) {
+      var text = String(content || "").trim();
+      if (!text) return "";
+      var blocks = [];
+      var current = null;
+      var knownTitles = [
+        "回答", "直接回答", "重点依据", "补充说明", "员工怎么用", "命中的知识库资料", "参考资料", "资料来源",
+        "客户意图", "客户意图判断", "销售阶段", "回复风格", "可直接发送", "可直接发送的微信回复", "建议补问", "下一步动作", "本次参考知识", "参考知识",
+        "搜索摘要", "命中内容", "综合整理", "相关内容", "事实边界", "未记录", "提醒",
+        "今日推荐选题 1", "今日推荐选题 2", "选题 1", "选题 2", "平台", "业务目标", "标题", "怎么拍", "开头钩子", "核心方向", "可拍素材", "结尾引导",
+        "版本1｜亲切自然", "版本2｜大白话一点", "版本3｜推进成交", "可以这样说", "直接一点可以这样处理", "下一步可以这样推进", "开头", "结尾",
+        "当前问题"
+      ];
+      text.split(/\n/).forEach(function(line) {
+        var trimmed = line.trim();
+        var mode = trimmed.match(/^【([^】]+)】(.*)$/);
+        var title = trimmed.match(/^([^：:]{2,24})[：:]\s*(.*)$/);
+        if (mode) {
+          if (current) blocks.push(current);
+          current = { title: mode[1], body: mode[2].trim() };
+        } else if (title && knownTitles.indexOf(title[1]) >= 0 && !/^\d+\./.test(trimmed)) {
+          if (current) blocks.push(current);
+          current = { title: title[1], body: title[2].trim() };
+        } else {
+          if (!current) current = { title: "内容", body: "" };
+          current.body += (current.body ? "\n" : "") + line;
+        }
+      });
+      if (current) blocks.push(current);
+      return blocks.map(function(block, index) {
+        var cls = sectionClass(block.title);
+        if (!cls && index === 0) cls = "main";
+        return '<section class="output-card ' + cls + '">' +
+          '<div class="output-title">' + escapeHtml(block.title) + '</div>' +
+          '<div class="output-body">' + highlightText(block.body || "") + '</div>' +
+          '</section>';
+      }).join("");
+    }
+    function setOutput(outputId, content) {
+      var out = qs(outputId);
+      out.dataset.raw = String(content || "");
+      out.innerHTML = formatGeneratedContent(content);
+    }
+    function download(filename, text) {
+      var blob = new Blob([text], { type: "application/json;charset=utf-8" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    function cleanFilename(name) {
+      return String(name || "白金汉宫AI生成内容").replace(/[\\/:*?"<>|]/g, "").slice(0, 60);
+    }
+    function getHistory() {
+      return JSON.parse(localStorage.getItem("bjh_generation_history") || "{}");
+    }
+    function setHistory(history) {
+      localStorage.setItem("bjh_generation_history", JSON.stringify(history));
+      renderAllHistory();
+    }
+    function saveGeneration(outputId, task, mode, content) {
+      content = String(content || "").trim();
+      if (!content || content.indexOf("结果会显示在这里") >= 0 || content.indexOf("需要配置") >= 0 || content.indexOf("调用失败") >= 0) return;
+      var history = getHistory();
+      var list = history[outputId] || [];
+      list.unshift({
+        id: uid(),
+        task: task,
+        mode: mode,
+        content: content,
+        createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+      });
+      history[outputId] = list.slice(0, 30);
+      setHistory(history);
+    }
+    function renderHistory(outputId) {
+      var holder = document.querySelector('[data-history-for="' + outputId + '"]');
+      if (!holder) return;
+      var list = (getHistory()[outputId] || []);
+      holder.innerHTML = list.length ? list.map(function(item) {
+        return '<article class="history-item">' +
+          '<div class="history-head"><span>' + escapeHtml(item.mode) + ' · ' + escapeHtml(item.createdAt) + '</span><span>' + escapeHtml(item.task) + '</span></div>' +
+          '<p>' + escapeHtml(item.content).slice(0, 180) + (item.content.length > 180 ? "..." : "") + '</p>' +
+          '<div class="small-actions" style="margin-top:8px"><button class="btn ghost" data-use-history="' + outputId + '" data-history-id="' + item.id + '">查看</button><button class="btn ghost" data-delete-history="' + outputId + '" data-history-id="' + item.id + '">删除</button></div>' +
+          '</article>';
+      }).join("") : '<div class="hint">生成后会自动保存到这里。</div>';
+      if (window.lucide) lucide.createIcons();
+    }
+    function renderAllHistory() {
+      ["askOutput", "topicOutput", "createOutput", "salesOutput"].forEach(renderHistory);
+    }
+    function useHistory(outputId, id) {
+      var item = (getHistory()[outputId] || []).filter(function(row) { return row.id === id; })[0];
+      if (item) setOutput(outputId, item.content);
+    }
+    function deleteHistory(outputId, id) {
+      var history = getHistory();
+      history[outputId] = (history[outputId] || []).filter(function(row) { return row.id !== id; });
+      setHistory(history);
+    }
+    function clearHistory(outputId) {
+      if (!confirm("确定清空这个模块的历史版本吗？")) return;
+      var history = getHistory();
+      history[outputId] = [];
+      setHistory(history);
+    }
+    function nextLocalVariant(task) {
+      var key = "bjh_local_variant_counts";
+      var counts = JSON.parse(localStorage.getItem(key) || "{}");
+      counts[task] = (counts[task] || 0) + 1;
+      localStorage.setItem(key, JSON.stringify(counts));
+      return counts[task] - 1;
+    }
+    function exportWord(outputId, title) {
+      var content = (qs(outputId).textContent || "").trim();
+      if (!content || content.indexOf("结果会显示在这里") >= 0 || content.indexOf("选题会包含") >= 0 || content.indexOf("默认只输出") >= 0 || content.indexOf("回复会尽量") >= 0) {
+        alert("请先生成内容，再导出 Word。");
+        return;
+      }
+      var safeTitle = cleanFilename(title);
+      var html = '<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(safeTitle) + '</title>' +
+        '<style>body{font-family:Microsoft YaHei,SimSun,sans-serif;font-size:16pt;line-height:1.75;color:#222;}h1{font-size:22pt;}pre{white-space:pre-wrap;font-family:Microsoft YaHei,SimSun,sans-serif;}</style>' +
+        '</head><body><h1>' + escapeHtml(safeTitle) + '</h1><pre>' + escapeHtml(content) + '</pre></body></html>';
+      var blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = safeTitle + ".doc";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    function extractField(text, label) {
+      var reg = new RegExp(label + "：([^\\n]*)");
+      var match = String(text || "").match(reg);
+      return match ? match[1].trim() : "";
+    }
+    function tokenizeQuery(query) {
+      var text = String(query || "").toLowerCase();
+      var base = text.split(/[\s,，。、；;：:\n\r\t！？!?（）()【】\[\]“”"'<>《》]+/).filter(function(word) {
+        return word && word.length > 1;
+      });
+      var important = [
+        "白金汉宫", "宜春", "铜锣湾", "财富中心", "润达", "润达国际", "迎宾馆", "青龙", "青龙商厦",
+        "无预制菜", "现做现上", "一站式", "宴会管家", "led", "大屏", "灯光", "舞美", "停车", "充电桩",
+        "婚宴", "升学宴", "谢师宴", "宝宝宴", "生日宴", "订婚", "回门", "商务宴", "年会", "发布会",
+        "草坪", "户外", "层高", "无柱", "水晶", "法式", "欧式", "宫廷", "商圈", "小宴",
+        "价格", "多少钱", "贵", "优惠", "预算", "降价", "档期", "桌数", "看厅", "试菜", "下定",
+        "抖音", "视频号", "小红书", "朋友圈", "美团", "大众点评", "直播", "短视频", "口播", "素材",
+        "线索", "加微信", "到店", "成交", "客单价", "转介绍", "回访", "复盘", "晨会", "训练",
+        "私人定制", "礼物", "布置", "文案", "音乐", "主持", "传播"
+      ];
+      important.forEach(function(word) {
+        if (text.indexOf(word.toLowerCase()) >= 0 && base.indexOf(word.toLowerCase()) < 0) base.push(word.toLowerCase());
+      });
+      return base;
+    }
+    function scoreItem(item, query, scene) {
+      var title = String(item.title || "").toLowerCase();
+      var category = String(item.category || "").toLowerCase();
+      var itemScene = String(item.scene || "").toLowerCase();
+      var keywords = String(item.keywords || "").toLowerCase();
+      var body = String(item.body || "").toLowerCase();
+      var tokens = tokenizeQuery(query + " " + scene);
+      var score = 0;
+      tokens.forEach(function(word) {
+        if (title.indexOf(word) >= 0) score += 10;
+        if (keywords.indexOf(word) >= 0) score += 8;
+        if (category.indexOf(word) >= 0) score += 5;
+        if (itemScene.indexOf(word) >= 0) score += 5;
+        if (body.indexOf(word) >= 0) score += word.length >= 3 ? 4 : 2;
+      });
+      if (scene && itemScene.indexOf(String(scene).toLowerCase()) >= 0) score += 8;
+      return score;
+    }
+    function searchKnowledge(query, scene, limit) {
+      var ranked = allKb().map(function(item) {
+        return { item: item, score: scoreItem(item, query, scene) };
+      }).sort(function(a, b) { return b.score - a.score; });
+      return ranked.filter(function(row) { return row.score > 0; }).slice(0, limit || 6);
+    }
+    function relevantKnowledge(query, scene, limit) {
+      var picked = searchKnowledge(query, scene, limit || 8);
+      if (!picked.length) picked = allKb().slice(0, limit || 8).map(function(item) { return { item: item, score: 1 }; });
+      return picked.map(function(x) {
+        return "【" + x.item.category + "】" + x.item.title + "\n" + x.item.body;
+      }).join("\n\n");
+    }
+    function systemPrompt() {
+      return "你是白金汉宫国际宴会中心的真人业务助手，不是资料播报机器人。回答前先判断用户真实需求：简单事实就直接短答；要回复客户就给自然、礼貌、能直接发微信的话；要创作就像真人口播，少书面词，多真实场景和客户常见问题；要搜索资料就只整理命中资料。默认短答、问什么答什么，不主动加销售理论、短视频动作、岗位复盘等无关内容。最高事实规则：只能使用知识库明确提供的信息，严禁编造宴会厅名称、门店地址、套餐、价格、优惠、活动、客户案例、数据和政策；知识库没有就写“当前知识库暂未记录”。金辉单人脚本默认只输出纯口播文字，用「」括起来，不加分镜、时长、画面说明。";
+    }
+    function factualSafetyRules() {
+      return "事实安全规则：禁止编造知识库没有的宴会厅名称、门店地址、套餐、价格、优惠、活动、客户案例、数据和政策。没有资料就明确说“当前知识库暂未记录”。可以把表达说得自然，但事实只能来自知识库。";
+    }
+    function buildPrompt(task, userPrompt) {
+      var knowledge = relevantKnowledge(userPrompt, task, 9);
+      var outputRule = "默认像真人业务助理一样回答：先给直接答案，语气自然清楚；用户没要求详细时，不要长篇解释；不要输出用户没问的栏目。";
+      if (task === "内容搜索") {
+        outputRule = "你正在做知识库内容搜索。只基于上方可参考知识整理；先用1-3句话说清找到什么，再列命中内容；不要补充知识库之外的信息。建议结构：综合整理、相关内容、事实边界。没有明确资料就直接说当前知识库暂未记录。";
+      } else if (task.indexOf("内容创作") >= 0) {
+        outputRule = "你正在做内容创作。语言要像真人说话，少口号、少书面词、少空话；用客户常见顾虑开头。事实必须来自知识库，不要编造厅名、套餐、价格、地址、活动。没有具体厅名时不要写具体厅名。";
+      } else if (task === "销售回复") {
+        outputRule = "销售回复默认只输出能直接发给客户的微信话术，语气自然、有礼貌、像真人销售；不要写客户意图、回复策略、参考知识等分析。只有用户明确要分析时才展开。";
+      } else if (task.indexOf("选题") >= 0) {
+        outputRule = "选题要像门店今天真的能拍的内容：标题直白、开头有客户场景、拍法具体、结尾有行动引导。不要编造知识库没有的事实。";
+      }
+      return {
+        knowledge: knowledge,
+        fullPrompt: "任务：" + task + "\n\n可参考知识：\n" + knowledge + "\n\n用户需求：\n" + userPrompt + "\n\n" + factualSafetyRules() + "\n\n输出要求：" + outputRule
+      };
+    }
+    function generateLocal(task, userPrompt, outputId) {
+      var content = localDraft(task, userPrompt, outputId);
+      setOutput(outputId, content);
+      saveGeneration(outputId, task, "本地生成", content);
+    }
+    async function callAI(task, userPrompt, outputId) {
+      var cfg = getConfig();
+      var out = qs(outputId);
+      var built = buildPrompt(task, userPrompt);
+      if (!cfg.apiKey || !cfg.baseUrl || !cfg.modelName) {
+        setOutput(outputId, "【需要配置】请先到“配置”选择模型方案并填写 API Key，然后再点击 AI 生成。");
+        return;
+      }
+      setOutput(outputId, "【AI 生成模式】正在调用模型生成，请稍等...");
+      try {
+        var base = cfg.baseUrl.replace(/\/$/, "");
+        var res = await fetch(base + "/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + cfg.apiKey
+          },
+          body: JSON.stringify({
+            model: cfg.modelName,
+            temperature: Number(cfg.temperature || 0.7),
+            messages: [
+              { role: "system", content: systemPrompt() },
+              { role: "user", content: built.fullPrompt }
+            ]
+          })
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status + " " + await res.text());
+        var data = await res.json();
+        var aiContent = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "模型没有返回内容。";
+        setOutput(outputId, aiContent);
+        saveGeneration(outputId, task, "AI 生成", aiContent);
+      } catch (err) {
+        setOutput(outputId, "【AI 调用失败】" + err.message + "\n\n请检查 API Key、模型名、Base URL 或网络连接后再试。");
+      }
+    }
+    function localDraft(task, prompt, outputId) {
+      var variant = nextLocalVariant(task);
+      if (outputId === "askOutput") return contentSearchLocalDraft(prompt);
+      if (outputId === "salesOutput") return salesLocalDraft(prompt, variant);
+      if (task.indexOf("选题") >= 0) return topicLocalDraft();
+      if (outputId === "createOutput" && (task.indexOf("金辉") >= 0 || prompt.indexOf("口播") >= 0)) {
+        var koubo = [
+          "「在宜春办宴会，很多人一开始都会先问价格。这个很正常，但我更建议你先看三件事：菜是不是现做现上，厅型跟桌数合不合适，宴会当天有没有人帮你把流程盯住。白金汉宫有5家门店、40多个主题宴会厅，从看厅、菜单、布置到当天管家服务，都能一起安排。你把日期和桌数发我，我先帮你看哪家店更合适。」",
+          "「办宴会最怕的不是多问几家，而是最后选了一个不合适的地方：厅太挤、菜不稳、现场效果不出来，主家当天还特别累。白金汉宫做的是一站式宴会，厅型、菜品、灯光大屏、宴会管家这些都有人跟。你告诉我宴会类型、日期和桌数，我先帮你判断适合哪个店。」",
+          "「如果你最近在看升学宴、婚宴或者宝宝宴，别只盯着多少钱一桌。价格当然要看，但更重要的是这场宴会办出来有没有面子、亲戚朋友吃得好不好、当天你省不省心。白金汉宫5家门店、40多个厅，可以按你的桌数、预算和风格来配。」"
+        ];
+        return koubo[variant % koubo.length];
+      }
+      var knowledge = relevantKnowledge(prompt, task, 5);
+      var generic = [
+        "可以这样说：\n先别急着把所有卖点都讲完，先看对方现在最关心什么。白金汉宫能说清楚的优势是：5家门店、40余个主题宴会厅、无预制菜、现做现上、一站式服务、宴会管家、LED大屏、灯光舞美和停车配套。\n\n下一步可以这样推进：\n让对方补充宴会类型、日期、桌数和预算，我再帮他缩小到合适门店或方案。\n\n参考资料：\n" + knowledge.slice(0, 520),
+        "直接一点可以这样处理：\n如果对方问价格，就先问日期和桌数；如果对方问门店，就先看桌数和位置；如果对方不知道怎么选，就先帮他排除不合适的。\n\n白金汉宫这里可以重点说：门店多、厅型多、菜品现做现上、流程有人跟，办起来更省心。\n\n参考资料：\n" + knowledge.slice(0, 520),
+        "这件事可以先用一句话接住：\n“可以，我先帮你按实际情况看，不用一上来就定死。”\n\n然后再补一句理由：\n白金汉宫有5家门店和40余个主题宴会厅，适合先按日期、桌数、预算和风格来匹配。\n\n最后给动作：\n把宴会类型、日期和桌数发来，我先帮你看有没有合适的档期和门店。\n\n参考资料：\n" + knowledge.slice(0, 520)
+      ];
+      return generic[variant % generic.length];
+    }
+    function wantsDetail(prompt) {
+      return /详细|展开|依据|来源|为什么|怎么用|执行方案|话术拆解|脚本|复盘|训练|分析|参考知识/.test(String(prompt || ""));
+    }
+    function compactSources(matches) {
+      return matches.slice(0, 3).map(function(row, index) {
+        return (index + 1) + ". 【" + row.item.category + "】" + row.item.title;
+      }).join("\n");
+    }
+    function contentSearchLocalDraft(prompt) {
+      var query = extractField(prompt, "搜索内容") || extractField(prompt, "问题") || prompt;
+      var matches = searchKnowledge(query + " " + prompt, "", 8);
+      if (!matches.length) {
+        return "综合整理：\n当前知识库暂未搜索到相关内容。\n\n事实边界：\n如果这是新门店、新厅名、新套餐、新价格、新活动或详细地址，请先到“知识库”补充资料。";
+      }
+      var grouped = {};
+      matches.forEach(function(row) {
+        var cat = row.item.category || "其他";
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(row.item);
+      });
+      var overview = buildLocalSearchOverview(query, matches);
+      var sections = Object.keys(grouped).map(function(category) {
+        var lines = grouped[category].slice(0, 3).map(function(item, index) {
+          return (index + 1) + ". " + item.title + "\n" + item.body.slice(0, 240) + (item.body.length > 240 ? "..." : "");
+        }).join("\n\n");
+        return "【" + category + "】\n" + lines;
+      }).join("\n\n");
+      return "综合整理：\n" + overview + "\n\n相关内容：\n" + sections + "\n\n事实边界：\n以上内容只来自当前知识库。没有在这里出现的厅名、地址、套餐、价格、优惠和活动，不要当作已确认信息使用。";
+    }
+    function buildLocalSearchOverview(query, matches) {
+      var text = matches.map(function(row) { return row.item.body; }).join(" ");
+      if (/特色|优势|强项|卖点/.test(query)) {
+        return "当前知识库里，白金汉宫的主要特色集中在：5家门店、40余个主题宴会厅、无预制菜、现做现上、一站式服务、宴会管家、LED大屏、灯光舞美、停车和充电桩等配套。";
+      }
+      if (/门店|几家|店名|位置|地址/.test(query)) {
+        var answer = "当前知识库记录的门店包括：铜锣湾店、财富中心店、润达国际店、迎宾馆店、青龙商厦店。";
+        if (/位置|地址|哪里|在哪/.test(query)) answer += "\n当前知识库暂未记录每家门店的详细街道地址。";
+        return answer;
+      }
+      if (/厅名|宴会厅|大厅|厅/.test(query)) {
+        return "当前知识库记录的是门店和厅型推荐逻辑，不保证包含完整具体厅名清单。没有明确出现的厅名，不要当作已确认厅名使用。";
+      }
+      if (/价格|套餐|优惠|多少钱/.test(query)) {
+        return "当前知识库有价格异议处理原则，但没有记录具体价格、套餐明细或优惠金额。";
+      }
+      return "已从全局知识库中整理出 " + matches.length + " 条相关内容，请看下面分组。";
+    }
+    function knowledgeLocalDraft(prompt, variant) {
+      return contentSearchLocalDraft(prompt);
+    }
+    function directKnowledgeAnswer(question, matches, variant) {
+      var text = matches.map(function(row) { return row.item.title + "。" + row.item.body; }).join(" ");
+      if (/门店|几家店|哪些店|店名|在哪里|地址|位置|分别在哪/.test(question)) {
+        var names = "白金汉宫目前知识库记录了5家门店：\n1. 铜锣湾店\n2. 财富中心店\n3. 润达国际店\n4. 迎宾馆店\n5. 青龙商厦店";
+        if (/哪里|在哪|地址|位置/.test(question)) {
+          names += "\n\n当前知识库暂未记录每家门店的详细街道地址。";
+        }
+        return names;
+      }
+      if (/推荐|适合|选厅|厅|停车|草坪|层高|无柱|水晶|商圈/.test(question)) {
+        return "要草坪、户外或大型婚宴，优先铜锣湾店；要10米层高、高级艺术感或商务属性，优先财富中心店；要商圈便利、小宴灵活或停车强，优先润达国际店；要水晶风、法式庄园，优先迎宾馆店；要市中心、欧式宫廷、无柱大厅，优先青龙商厦店。";
+      }
+      if (/卖点|优势|为什么选|核心/.test(question)) {
+        return "核心优势：5家门店、40余个主题宴会厅、无预制菜、现做现上、一站式服务、宴会管家、LED大屏、灯光舞美、停车/充电桩资源。";
+      }
+      if (/销售|流程|服务|回访|转介绍|看厅|下定/.test(question)) {
+        return "销售流程：咨询、加微信、邀约、到店、看厅、报价、下定、宴前确认、宴中服务、宴后回访、评价转介绍。";
+      }
+      if (/抖音|视频号|小红书|朋友圈|直播|短视频|线上|素材/.test(question)) {
+        return "平台分工：抖音做同城曝光和线索，视频号做熟人传播和信任背书，小红书做审美种草和攻略搜索，美团/大众点评做搜索承接和评价资产，私域微信做跟进成交、复购和转介绍。";
+      }
+      if (/价格|贵|优惠|降价|预算|多少钱/.test(question)) {
+        return "价格问题的原则：不盲目降价。先说明价格要看宴会类型、日期、桌数、门店和厅型，再按客户预算匹配方案。";
+      }
+      return matches[0].item.body.slice(0, 260) + (matches[0].item.body.length > 260 ? "..." : "");
+    }
+    function employeeUseAnswer(question, matches, variant) {
+      var uses = [
+        "如果是在内部培训，先让员工复述“资料要点”，再让他用自己的客户案例讲一遍；如果是在接待客户，把资料转成一句判断、一句理由、一个下一步动作。",
+        "实际使用时，先判断客户属于问门店、问产品、问价格、问流程还是问平台内容，再引用对应资料，不要把所有卖点一次性堆给客户。",
+        "建议把这条资料保存成门店话术卡：第一句回答问题，第二句补充白金汉宫优势，第三句引导客户补充日期、桌数、预算、风格或预约看厅。"
+      ];
+      if (/复盘|数据|晨会|训练/.test(question)) {
+        return "晨会可以按“昨天数据表现 - 问题判断 - 今天训练主题 - 晚会检查”来用。比如线索多加微信少，就训练私信破冰；加微信多到店少，就训练邀约理由；到店多成交少，就训练价值表达和异议处理。";
+      }
+      return uses[variant % uses.length];
+    }
+    function salesLocalDraft(prompt, variant) {
+      var stage = extractField(prompt, "销售阶段") || "咨询";
+      var style = extractField(prompt, "回复风格") || "自然亲切";
+      var raw = extractField(prompt, "客户原话");
+      var context = extractField(prompt, "已知信息");
+      var matches = searchKnowledge(raw + " " + context + " " + stage + " " + prompt, "销售回复", 4);
+      var askMore = context ? "如果具体日期、桌数和预算区间也方便发我，我就能帮您匹配得更准。" : "您这边大概办什么宴会、预计哪一天、几桌左右呢？";
+      if (style === "给3个版本") {
+        var one = buildSalesReply(raw, context, 0, "亲切自然");
+        var two = buildSalesReply(raw, context, 1, "大白话口语版");
+        var three = buildSalesReply(raw, context, 2, "推进成交");
+        return "版本1｜亲切自然：\n" + one + "\n\n版本2｜大白话一点：\n" + two + "\n\n版本3｜推进成交：\n" + three + "\n\n建议补问：\n" + askMore;
+      }
+      var replyCore = buildSalesReply(raw, context, variant, style);
+      var output = "可直接发送：\n" + replyCore;
+      if (!context || /还需要|补问|问什么|详细|分析|策略|下一步/.test(prompt)) output += "\n\n建议补问：\n" + askMore;
+      if (wantsDetail(prompt)) {
+        output += "\n\n客户意图：\n" + detectSalesIntent(raw + " " + context);
+        output += "\n\n参考知识：\n" + (compactSources(matches) || "销售流程、价格异议、门店推荐");
+      }
+      return output;
+    }
+    function detectSalesIntent(text) {
+      if (/贵|优惠|便宜|降价|多少钱|价格|预算/.test(text)) return "客户重点在价格和预算，需要先接住价格问题，再拆解场地、菜品、硬件、管家和布置价值。";
+      if (/有空|档期|哪天|日期|周末|今天|明天/.test(text)) return "客户在确认档期，适合先查日期，再推动到店看厅或锁定厅型。";
+      if (/几桌|桌数|大厅|小厅|草坪|停车|哪个店|厅/.test(text)) return "客户在选门店/选厅，需要先问桌数和风格，再按门店资源推荐。";
+      if (/对比|别家|其他酒店|看看/.test(text)) return "客户还在比较，需要用真实优势和服务流程建立信任，不要急着压价。";
+      return "客户处于咨询了解阶段，需要先补齐宴会类型、日期、桌数、预算和风格偏好。";
+    }
+    function buildSalesReply(raw, context, variant, style) {
+      var combined = raw + " " + context;
+      var prefix = context ? "您好，可以的。我先按您现在的情况帮您看，" + context + "。" : "您好，可以的，我先帮您看一下更合适的方案。";
+      if (style === "大白话口语版") {
+        if (/对比|别家|其他酒店|看看/.test(combined) && /贵|优惠|便宜|降价|多少钱|价格|预算/.test(combined)) {
+          return "可以理解，办宴会肯定要看预算，也可以多对比几家。你对比的时候别只看一桌多少钱，也看下菜是不是现做现上、厅型合不合适、当天有没有人帮你盯流程。你把日期和桌数发我，我先帮你配一版，你拿去对比也更清楚。";
+        }
+        if (/哪里|在哪|地址|位置|门店|哪家店/.test(combined)) {
+          return "可以的，我们现在有铜锣湾店、财富中心店、润达国际店、迎宾馆店、青龙商厦店。你把大概桌数和想办什么宴发我，我先帮你看哪家店更合适。";
+        }
+        if (/档期|有空|日期|哪天/.test(combined)) {
+          return (context ? "可以，我先按你这个情况看一下，" + context + "。" : "可以，我先帮你看一下。") + "你把具体日期和大概桌数发我，我先查下档期，有合适的我马上跟你说。";
+        }
+        if (/贵|优惠|便宜|降价|多少钱|价格|预算/.test(combined)) {
+          return (context ? "可以，我先按你这个情况看一下，" + context + "。" : "可以，我先帮你看一下。") + "预算这块肯定要看，我先不让你盲目选贵的。你把日期、桌数和大概预算发我，我帮你配一版合适的，不合适我们再调整。";
+        }
+        if (/对比|别家|其他酒店|看看/.test(combined)) {
+          return "可以的，多看几家很正常。你主要对比的时候别只看一桌多少钱，也看下菜是不是现做现上、厅型合不合适、当天有没有人帮你盯流程。你把日期和桌数发我，我先帮你配个方案，你拿去对比也更清楚。";
+        }
+        return (context ? "可以，我先按你这个情况看一下，" + context + "。" : "可以，我先帮你看一下。") + "价格主要看日期、桌数和选哪个厅。你把大概预算也发我，我先帮你配一版，不合适我们再调整。";
+      }
+      if (/对比|别家|其他酒店|看看/.test(combined) && /贵|优惠|便宜|降价|多少钱|价格|预算/.test(combined)) {
+        return "理解的，办宴会肯定要看预算，多对比几家也正常。您对比的时候可以一起看菜品是不是现做现上、厅型和桌数合不合适、灯光大屏效果、当天有没有宴会管家跟流程。您把日期和桌数发我，我先给您配一版清楚的方案，您拿去对比也方便。";
+      }
+      if (/哪里|在哪|地址|位置|门店|哪家店/.test(combined)) {
+        return "您好，我们白金汉宫目前有铜锣湾店、财富中心店、润达国际店、迎宾馆店、青龙商厦店。您方便说一下大概桌数和想办的宴会类型吗？我帮您先推荐更合适的门店。";
+      }
+      if (/档期|有空|日期|哪天/.test(combined)) {
+        return prefix + "档期我可以先帮您查一下，您把具体日期和大概桌数发我，我确认后马上回复您。";
+      }
+      if (/贵|优惠|便宜|降价|多少钱|价格|预算/.test(combined)) {
+        if (style === "推进成交") {
+          return "理解的，办宴会肯定要看预算。这样吧，您把日期、桌数和大概预算发我，我先帮您筛一版合适的厅和方案，尽量按您的预算来配，合适的话再约您到店看一下现场效果。";
+        }
+        return "理解的，办宴会肯定要先看预算。我们这边价格主要看日期、桌数、门店和厅型，我可以先按您的预算帮您配，不一定要选贵的，重点是办得体面、省心。";
+      }
+      if (/对比|别家|其他酒店|看看/.test(combined)) {
+        return "可以的，多对比一下很正常。您看的时候可以重点对比菜品是不是现做现上、厅型和桌数合不合适、灯光大屏效果、当天有没有宴会管家跟流程。您把日期和桌数发我，我先给您做个清楚的方案，您对比起来也方便。";
+      }
+      var variants = [
+        prefix + "您把宴会日期、预计桌数和大概预算发我，我先帮您查档期，再看哪个门店和厅型更合适。",
+        prefix + "我先不乱推荐，您把日期、桌数、宴会类型发我，我按实际情况帮您筛一下，合适的再发您参考。",
+        prefix + "方案可以配，主要先看日期和桌数。您发我这两个信息，我先帮您确认有没有合适档期。"
+      ];
+      return variants[variant % variants.length];
+    }
+    function topicLocalDraft() {
+      var variant = nextLocalVariant("选题模板");
+      var platform = qs("topicPlatform").value;
+      var goal = qs("topicGoal").value;
+      var banquet = qs("topicBanquet").value;
+      var store = qs("topicStore").value;
+      var format = qs("topicFormat").value;
+      var material = qs("topicMaterial").value || "今天门店现场、客户反馈、菜品、布置、服务过程";
+      var sets = [
+        "选题 1\n标题：在宜春办" + banquet + "，别一上来只问多少钱一桌\n怎么拍：人站在厅里口播，后面带到摆台、灯光大屏或迎宾区。\n开头：很多人问宴会第一句话就是多少钱，其实真正怕的是钱花了，现场还不体面。\n内容：讲清楚菜品现做现上、厅型匹配、宴会管家和现场效果。\n结尾：把日期和桌数发我，我先帮你看哪个店合适。\n\n选题 2\n标题：" + banquet + "选厅，先看这3个细节\n怎么拍：用" + material + "做镜头，边走边说。\n开头：厅选错了，布置再好也容易显得挤、乱、不出片。\n内容：讲桌数、动线、灯光大屏和停车。\n结尾：评论区发桌数，我帮你先判断适合哪种厅。",
+        "选题 1\n标题：办" + banquet + "，为什么要早点看厅？\n怎么拍：从门店门头进来，拍厅、迎宾区、桌面细节。\n开头：很多人等日子近了才看厅，最后不是没档期，就是合适的厅被订了。\n内容：讲档期、桌数、风格和预算要提前匹配。\n结尾：私信日期和桌数，我先帮你查档期。\n\n选题 2\n标题：一场省心的" + banquet + "，现场一定要有人盯流程\n怎么拍：拍宴会管家、摆台、上菜、灯光大屏切换。\n开头：宴会当天，主家最怕一边招呼客人，一边还要管现场。\n内容：讲宴会管家、上菜节奏、现场动线和服务跟进。\n结尾：想省心办宴会，先到店看一遍流程。",
+        "选题 1\n标题：" + banquet + "客户最常问的3个问题\n怎么拍：金辉单人口播，穿插" + material + "。\n开头：最近很多客户问我，办" + banquet + "到底先看什么。\n内容：先说价格要看日期和桌数，再说厅型、菜品和服务。\n结尾：把你的桌数发我，我帮你先缩小范围。\n\n选题 2\n标题：同样办" + banquet + "，为什么现场效果差这么多？\n怎么拍：拍厅型全景、灯光变化、LED大屏和迎宾区。\n开头：不是所有宴会厅拍出来都一样，差别就在这些细节里。\n内容：讲层高、灯光、大屏、动线和门店匹配。\n结尾：把风格和桌数发我，我先帮你推荐方向。"
+      ];
+      return sets[variant % sets.length];
+    }
+    function setBusy(btn, busy) {
+      btn.disabled = busy;
+      btn.dataset.oldText = btn.dataset.oldText || btn.innerHTML;
+      btn.innerHTML = busy ? "生成中..." : btn.dataset.oldText;
+      if (window.lucide) lucide.createIcons();
+    }
+    async function runWithBusy(btn, fn) {
+      setBusy(btn, true);
+      try { await fn(); } finally { setBusy(btn, false); }
+    }
+    function renderNav() {
+      var nav = qs("nav");
+      var mobile = qs("mobileTabs");
+      nav.innerHTML = "";
+      mobile.innerHTML = "";
+      NAV.forEach(function(item) {
+        var b = document.createElement("button");
+        b.dataset.viewTarget = item.id;
+        b.innerHTML = '<i data-lucide="' + item.icon + '"></i><span>' + item.label + '</span>';
+        nav.appendChild(b);
+        var mb = document.createElement("button");
+        mb.dataset.viewTarget = item.id;
+        mb.textContent = item.label;
+        mobile.appendChild(mb);
+      });
+    }
+    function switchView(id) {
+      document.querySelectorAll(".view").forEach(function(v) { v.classList.toggle("active", v.dataset.view === id); });
+      document.querySelectorAll("[data-view-target]").forEach(function(b) { b.classList.toggle("active", b.dataset.viewTarget === id); });
+      var item = NAV.filter(function(x) { return x.id === id; })[0] || NAV[0];
+      qs("pageTitle").textContent = item.label;
+      qs("pageDesc").textContent = item.desc;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (window.lucide) lucide.createIcons();
+    }
+    function searchTerms(q) {
+      return String(q || "").split(/[\s,，。、；;：:\n\r\t！？!?（）()【】\[\]“”"'<>《》]+/)
+        .map(function(term) { return term.trim(); })
+        .filter(function(term, index, arr) { return term && term.length >= 1 && arr.indexOf(term) === index; })
+        .slice(0, 8);
+    }
+    function highlightKbMatch(text, terms) {
+      var escaped = escapeHtml(text || "");
+      terms = terms || [];
+      terms.forEach(function(term) {
+        var safe = escapeHtml(term).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        if (!safe) return;
+        escaped = escaped.replace(new RegExp("(" + safe + ")", "gi"), '<mark class="kb-hit">$1</mark>');
+      });
+      return escaped;
+    }
+    function renderKbList() {
+      var q = qs("kbSearch") ? qs("kbSearch").value : "";
+      var terms = searchTerms(q);
+      var list = qs("kbList");
+      if (!list) return;
+      var disabled = getDisabledKbIds();
+      var showDisabled = qs("kbShowDisabled") && qs("kbShowDisabled").checked;
+      var items = rawAllKb().filter(function(item) {
+        var isDisabled = disabled.indexOf(item.id) >= 0;
+        if (isDisabled && !showDisabled) return false;
+        if (!q) return true;
+        return [item.title, item.category, item.scene, item.keywords, item.body].join(" ").toLowerCase().indexOf(q.toLowerCase()) >= 0;
+      });
+      var disabledCount = disabled.length;
+      qs("kbCount").textContent = items.length + " 条" + (disabledCount ? "，已停用 " + disabledCount + " 条" : "");
+      if (qs("kbSelectAll")) qs("kbSelectAll").checked = false;
+      list.innerHTML = items.map(function(item) {
+        var editable = item.source !== "内置";
+        var isDisabled = disabled.indexOf(item.id) >= 0;
+        var bodyText = item.body.slice(0, 360) + (item.body.length > 360 ? "..." : "");
+        return '<article class="kb-item' + (isDisabled ? " disabled" : "") + '">' +
+          '<div class="kb-item-head"><input type="checkbox" data-kb-select="' + item.id + '"><div>' +
+          '<h4>' + highlightKbMatch(item.title, terms) + '</h4>' +
+          '<div class="kb-meta"><span class="tag">' + highlightKbMatch(item.category, terms) + '</span><span class="tag">' + escapeHtml(item.source || "自定义") + '</span>' + (isDisabled ? '<span class="tag off">已停用</span>' : '') + '<span>' + highlightKbMatch(item.scene || "", terms) + '</span><span>' + highlightKbMatch(item.keywords || "", terms) + '</span></div>' +
+          '</div></div>' +
+          '<p>' + highlightKbMatch(bodyText, terms) + '</p>' +
+          '<div class="small-actions" style="margin-top:10px">' +
+          '<button class="btn ghost" data-edit-kb="' + item.id + '"><i data-lucide="pencil"></i>' + (editable ? '打开编辑' : '打开修订') + '</button>' +
+          (editable ? '<button class="btn ghost" data-delete-kb="' + item.id + '"><i data-lucide="trash-2"></i>删除</button>' : '') +
+          (isDisabled ? '<button class="btn ghost" data-restore-kb="' + item.id + '"><i data-lucide="rotate-ccw"></i>恢复</button>' : '<button class="btn ghost" data-disable-kb="' + item.id + '"><i data-lucide="eye-off"></i>停用</button>') +
+          (editable ? '' : '<span class="hint">内置知识保存后会生成自定义修订版，并停用原条目。</span>') +
+          '</div></article>';
+      }).join("");
+      if (window.lucide) lucide.createIcons();
+    }
+    function resetKbForm() {
+      editKbId = null;
+      editBuiltInKbId = null;
+      kbDraftPreview = null;
+      kbDraftSourceBody = "";
+      qs("kbFormTitle").textContent = "新增知识";
+      qs("kbBody").value = "";
+      setKbEditorMode("new");
+      renderKbPreview(null);
+    }
+    function inferKbMeta(body) {
+      var text = String(body || "").trim();
+      var lower = text.toLowerCase();
+      var category = "其他";
+      var scene = "通用";
+      var keywords = [];
+      function has(pattern) { return pattern.test(text) || pattern.test(lower); }
+      function add(words) {
+        words.forEach(function(word) {
+          if (text.indexOf(word) >= 0 && keywords.indexOf(word) < 0) keywords.push(word);
+        });
+      }
+      if (has(/门店|铜锣湾|财富中心|润达|迎宾馆|青龙|地址|位置/)) category = "品牌门店";
+      if (has(/厅|宴会厅|大厅|小厅|层高|无柱|草坪|水晶|宫廷|法式/)) category = "宴会厅";
+      if (has(/套餐|菜单|菜品|价格|桌|升学宴|婚宴|宝宝宴|寿宴|乔迁宴|企业宴|谢师宴|满月宴/)) category = "宴会产品";
+      if (has(/客户|回复|话术|怎么回|微信|咨询|邀约|成交|看厅|下定/)) category = "销售话术";
+      if (has(/太贵|贵|优惠|便宜|砍价|降价|考虑|对比|别家|没时间|犹豫/)) category = "客户异议";
+      if (has(/抖音|视频号|小红书|短视频|口播|脚本|拍摄|标题|选题/)) category = "短视频脚本";
+      if (has(/直播|主播|直播间|连麦|开播/)) category = "直播话术";
+      if (has(/朋友圈|私域|社群|微信朋友圈/)) category = "朋友圈文案";
+      if (has(/流程|服务|管家|接待|宴前|宴中|宴后|回访/)) category = "服务流程";
+      if (has(/数据|复盘|线索|转化|到店|成交率|晨会|晚会/)) category = "数据复盘";
+      if (has(/培训|新人|员工|岗位|训练|标准/)) category = "员工培训";
+      if (has(/客户|回复|话术|怎么回|微信|咨询|邀约|成交|看厅|下定/)) category = "销售话术";
+      if (has(/太贵|贵|优惠|便宜|砍价|降价|考虑|对比|别家|没时间|犹豫/)) category = "客户异议";
+
+      if (has(/升学宴|谢师宴/)) scene = "升学宴";
+      else if (has(/婚宴|订婚|回门/)) scene = "婚宴";
+      else if (has(/宝宝宴|满月宴|周岁/)) scene = "宝宝宴";
+      else if (has(/销售|客户|微信|回复|邀约|成交|看厅/)) scene = "销售回复";
+      else if (has(/抖音|视频号|小红书|短视频|口播|拍摄/)) scene = "内容创作";
+      else if (has(/直播/)) scene = "直播";
+      else if (has(/培训|新人|员工/)) scene = "员工培训";
+
+      add(["白金汉宫", "宜春", "铜锣湾", "财富中心", "润达国际", "迎宾馆", "青龙商厦", "升学宴", "婚宴", "宝宝宴", "寿宴", "套餐", "价格", "优惠", "无预制菜", "现做现上", "宴会管家", "LED大屏", "停车", "抖音", "视频号", "小红书", "朋友圈", "直播"]);
+      if (!keywords.length) {
+        keywords = text.split(/[\s,，。、；;：:\n\r\t！？!?（）()【】\[\]“”"'<>《》]+/)
+          .filter(function(word) { return word && word.length >= 2 && word.length <= 12; })
+          .slice(0, 8);
+      }
+      var title = text.split(/\n/).map(function(line) { return line.trim(); }).filter(Boolean)[0] || "新增知识";
+      title = title.replace(/^#+\s*/, "").replace(/^[【\[]|[】\]]$/g, "");
+      if (title.length > 28) title = title.slice(0, 28) + "...";
+      if (title.length < 4 && keywords.length) title = keywords.slice(0, 3).join(" · ");
+      return {
+        title: title || "新增知识",
+        category: category,
+        scene: scene,
+        keywords: keywords.slice(0, 10).join(",")
+      };
+    }
+    function buildKbDraft(body, meta) {
+      meta = meta || inferKbMeta(body);
+      return {
+        id: editKbId || uid(),
+        source: "自定义",
+        title: meta.title || "新增知识",
+        category: meta.category || "其他",
+        body: String(body || "").trim(),
+        scene: meta.scene || "通用",
+        keywords: Array.isArray(meta.keywords) ? meta.keywords.join(",") : String(meta.keywords || ""),
+        updatedAt: new Date().toISOString()
+      };
+    }
+    function renderKbPreview(item, note) {
+      var box = qs("kbPreview");
+      if (!box) return;
+      if (!item) {
+        box.className = "kb-preview empty";
+        box.textContent = "整理预览会显示在这里。先输入正文，再点击“AI 整理预览”。";
+        return;
+      }
+      box.className = "kb-preview";
+      box.innerHTML =
+        (note ? '<div class="mode-note' + (note.indexOf("已保存") >= 0 ? '' : ' local') + '">' + escapeHtml(note) + '</div>' : '') +
+        '<h4>' + escapeHtml(item.title || "新增知识") + '</h4>' +
+        '<div class="kb-meta"><span class="tag">' + escapeHtml(item.category || "其他") + '</span><span class="tag">' + escapeHtml(item.scene || "通用") + '</span><span>' + escapeHtml(item.keywords || "") + '</span></div>' +
+        '<p>' + escapeHtml(item.body || "") + '</p>';
+      if (window.lucide) lucide.createIcons();
+    }
+    function setKbEditorMode(mode, item) {
+      var body = qs("kbBody");
+      var label = qs("kbBodyLabel");
+      var hint = qs("kbBodyHint");
+      var isEdit = mode === "edit";
+      body.classList.toggle("full-editor", isEdit);
+      label.textContent = isEdit ? "完整正文（可直接修改）" : "新增知识正文";
+      hint.textContent = isEdit
+        ? "这里是这条知识的完整内容，不是摘要。可以直接删除或修改词语、句子、段落，改完点“确认保存知识”。"
+        : "不用填写标题和分类，保存时会根据正文自动匹配。";
+      if (isEdit && item) {
+        hint.textContent += " 当前打开：" + (item.title || "未命名知识") + "，完整正文约 " + String(item.body || "").length + " 字。";
+      }
+    }
+    function extractJsonObject(text) {
+      var cleaned = String(text || "").trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
+      try { return JSON.parse(cleaned); } catch (err) {}
+      var match = cleaned.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("AI 没有返回可识别的 JSON");
+      return JSON.parse(match[0]);
+    }
+    async function organizeKbPreview() {
+      var body = qs("kbBody").value.trim();
+      if (!body) {
+        alert("请先填写正文。");
+        return;
+      }
+      var cfg = getConfig();
+      if (!cfg.apiKey || !cfg.baseUrl || !cfg.modelName) {
+        kbDraftPreview = buildKbDraft(body);
+        kbDraftSourceBody = body;
+        renderKbPreview(kbDraftPreview, "AI 未配置，已先用自动规则整理预览");
+        return;
+      }
+      renderKbPreview(buildKbDraft(body), "AI 正在整理，请稍等...");
+      try {
+        var base = cfg.baseUrl.replace(/\/$/, "");
+        var res = await fetch(base + "/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + cfg.apiKey
+          },
+          body: JSON.stringify({
+            model: cfg.modelName,
+            temperature: 0.2,
+            messages: [
+              { role: "system", content: "你是白金汉宫知识库整理助手。只返回 JSON，不要解释。字段必须包含 title、category、scene、keywords、body。category 只能从这些分类中选：品牌门店、宴会厅、宴会产品、销售话术、客户异议、短视频脚本、直播话术、朋友圈文案、服务流程、数据复盘、员工培训、其他。title 简洁清楚，keywords 用逗号分隔，body 保留用户原意，可以轻微分段整理，但不能编造事实。" },
+              { role: "user", content: "请整理这条知识库内容：\n" + body }
+            ]
+          })
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status + " " + await res.text());
+        var data = await res.json();
+        var content = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
+        var parsed = extractJsonObject(content);
+        kbDraftPreview = buildKbDraft(parsed.body || body, {
+          title: parsed.title,
+          category: parsed.category,
+          scene: parsed.scene,
+          keywords: parsed.keywords
+        });
+        kbDraftSourceBody = body;
+        renderKbPreview(kbDraftPreview, "AI 已整理，确认无误后可保存");
+      } catch (err) {
+        kbDraftPreview = buildKbDraft(body);
+        kbDraftSourceBody = body;
+        renderKbPreview(kbDraftPreview, "AI 整理失败，已用自动规则整理：" + err.message);
+      }
+    }
+    function saveKb() {
+      var body = qs("kbBody").value.trim();
+      if (!body) {
+        alert("请先填写正文。");
+        return;
+      }
+      if (!kbDraftPreview || kbDraftSourceBody !== body) {
+        kbDraftPreview = buildKbDraft(body);
+        kbDraftSourceBody = body;
+        renderKbPreview(kbDraftPreview, "已自动整理预览");
+      }
+      var items = getUserKb();
+      var data = Object.assign({}, kbDraftPreview, {
+        id: editKbId || kbDraftPreview.id || uid(),
+        source: "自定义",
+        body: kbDraftPreview.body || body,
+        updatedAt: new Date().toISOString()
+      });
+      if (editBuiltInKbId) data.id = uid();
+      if (editKbId) {
+        items = items.map(function(item) { return item.id === editKbId ? data : item; });
+      } else {
+        items.unshift(data);
+      }
+      setUserKb(items);
+      if (editBuiltInKbId) disableKb(editBuiltInKbId);
+      renderKbPreview(data, "已保存到知识库");
+      editKbId = null;
+      editBuiltInKbId = null;
+      kbDraftPreview = data;
+      kbDraftSourceBody = "";
+      qs("kbFormTitle").textContent = "新增知识";
+      qs("kbBody").value = "";
+      setKbEditorMode("new");
+    }
+    function editKb(id) {
+      var item = rawAllKb().filter(function(x) { return x.id === id; })[0];
+      if (!item) return;
+      var isBuiltIn = item.source === "内置";
+      editKbId = isBuiltIn ? null : id;
+      editBuiltInKbId = isBuiltIn ? id : null;
+      kbDraftPreview = Object.assign({}, item, {
+        id: isBuiltIn ? uid() : item.id,
+        source: "自定义"
+      });
+      kbDraftSourceBody = item.body || "";
+      qs("kbFormTitle").textContent = isBuiltIn ? "修订内置知识" : "编辑知识";
+      qs("kbBody").value = item.body || "";
+      setKbEditorMode("edit", item);
+      renderKbPreview(kbDraftPreview, isBuiltIn ? "正在修订内置知识，保存后会生成自定义版本并停用原条目" : "正在编辑这条知识");
+      switchView("kb");
+      setTimeout(function() {
+        qs("kbBody").focus();
+        qs("kbBody").scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 120);
+    }
+    function deleteKb(id) {
+      if (!confirm("确定删除这条自定义知识吗？")) return;
+      setUserKb(getUserKb().filter(function(x) { return x.id !== id; }));
+      if (editKbId === id) resetKbForm();
+    }
+    function disableKb(ids) {
+      ids = Array.isArray(ids) ? ids : [ids];
+      setDisabledKbIds(getDisabledKbIds().concat(ids));
+    }
+    function restoreKb(ids) {
+      ids = Array.isArray(ids) ? ids : [ids];
+      setDisabledKbIds(getDisabledKbIds().filter(function(id) { return ids.indexOf(id) < 0; }));
+    }
+    function selectedKbIds() {
+      return Array.from(document.querySelectorAll("[data-kb-select]:checked")).map(function(input) { return input.dataset.kbSelect; });
+    }
+    function deleteSelectedKb() {
+      var ids = selectedKbIds();
+      if (!ids.length) return alert("请先勾选要处理的知识。");
+      var userIds = getUserKb().map(function(item) { return item.id; });
+      var deletable = ids.filter(function(id) { return userIds.indexOf(id) >= 0; });
+      var builtIn = ids.filter(function(id) { return userIds.indexOf(id) < 0; });
+      if (!deletable.length && builtIn.length) {
+        alert("选中的都是内置知识，不能直接删除。我会帮你改用“停用选中”来屏蔽。");
+        disableKb(builtIn);
+        return;
+      }
+      if (!confirm("确定删除选中的自定义知识吗？" + (builtIn.length ? "\n内置知识不会删除，只会停用。" : ""))) return;
+      setUserKb(getUserKb().filter(function(item) { return deletable.indexOf(item.id) < 0; }));
+      if (builtIn.length) disableKb(builtIn);
+      if (editKbId && deletable.indexOf(editKbId) >= 0) resetKbForm();
+      renderKbList();
+    }
+    function updateConfigStatus() {
+      var cfg = getConfig();
+      var aiReady = cfg.apiKey && cfg.baseUrl && cfg.modelName;
+      qs("configStatus").textContent = aiReady ? "AI 生成模式" : "AI 未配置";
+      document.querySelectorAll("[data-mode-note]").forEach(function(node) {
+        node.textContent = aiReady ? "当前：AI 生成模式" : "当前：请先配置 AI";
+        node.classList.toggle("local", !aiReady);
+      });
+      if (qs("apiKey")) {
+        var presetKey = normalizePresetKey(cfg.modelPreset);
+        qs("modelPreset").value = presetKey;
+        qs("apiKey").value = cfg.apiKey || "";
+        qs("baseUrl").value = cfg.baseUrl || MODEL_PRESETS[presetKey].baseUrl;
+        qs("modelName").value = cfg.modelName || MODEL_PRESETS[presetKey].modelName;
+        qs("temperature").value = String(cfg.temperature || 0.7);
+      }
+    }
+    function normalizePresetKey(key) {
+      if (MODEL_PRESETS[key]) return key;
+      if (String(key || "").indexOf("deepseek") === 0) return "deepseek";
+      if (String(key || "").indexOf("qwen") === 0) return "qwen";
+      if (String(key || "").indexOf("kimi") === 0) return "kimi";
+      return "openai";
+    }
+    function applyModelPreset(presetKey, overwrite) {
+      presetKey = normalizePresetKey(presetKey);
+      var preset = MODEL_PRESETS[presetKey] || MODEL_PRESETS["openai"];
+      if (!qs("baseUrl") || !qs("modelName")) return;
+      if (presetKey !== "custom" || overwrite) {
+        qs("baseUrl").value = preset.baseUrl;
+        qs("modelName").value = preset.modelName;
+      }
+      var readonly = presetKey !== "custom";
+      qs("baseUrl").readOnly = readonly;
+      qs("modelName").readOnly = false;
+    }
+    function configFromForm() {
+      return {
+        modelPreset: qs("modelPreset").value,
+        apiKey: qs("apiKey").value.trim(),
+        baseUrl: qs("baseUrl").value.trim(),
+        modelName: qs("modelName").value.trim(),
+        temperature: Number(qs("temperature").value)
+      };
+    }
+    function setConfigTestResult(message, ok) {
+      var box = qs("configTestResult");
+      box.style.display = "block";
+      box.style.borderLeftColor = ok ? "var(--green)" : "var(--red)";
+      box.style.background = ok ? "#edf5ef" : "#fff0ee";
+      box.style.color = ok ? "#315b3b" : "#7b2923";
+      box.textContent = message;
+    }
+    async function testModelConnection() {
+      var cfg = configFromForm();
+      if (!cfg.apiKey || !cfg.baseUrl || !cfg.modelName) {
+        setConfigTestResult("请先选择模型方案，并填写 API Key。", false);
+        return;
+      }
+      setConfigTestResult("正在测试连接，请稍等...", true);
+      try {
+        var base = cfg.baseUrl.replace(/\/$/, "");
+        var res = await fetch(base + "/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + cfg.apiKey
+          },
+          body: JSON.stringify({
+            model: cfg.modelName,
+            temperature: 0.2,
+            messages: [
+              { role: "system", content: "你只做连接测试。" },
+              { role: "user", content: "请只回复：连接成功" }
+            ]
+          })
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status + " " + await res.text());
+        var data = await res.json();
+        var content = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : "";
+        setConfigTestResult("测试成功：模型已连接。返回：" + (content || "连接成功"), true);
+      } catch (err) {
+        setConfigTestResult("测试失败：" + err.message, false);
+      }
+    }
+    function renderTemplates() {
+      qs("templateGrid").innerHTML = TEMPLATES.map(function(t, index) {
+        return '<article class="template-card"><h3>' + escapeHtml(t.title) + '</h3><p>' + escapeHtml(t.body) + '</p><button class="btn secondary" data-template-index="' + index + '"><i data-lucide="copy-plus"></i>使用模板</button></article>';
+      }).join("");
+    }
+    function withAdjust(prompt, adjustId) {
+      var adjust = qs(adjustId) ? qs(adjustId).value.trim() : "";
+      return adjust ? prompt + "\n调整要求：" + adjust : prompt;
+    }
+    function bindEvents() {
+      document.body.addEventListener("click", function(e) {
+        var navBtn = e.target.closest("[data-view-target]");
+        if (navBtn) switchView(navBtn.dataset.viewTarget);
+        var fill = e.target.closest("[data-fill]");
+        if (fill) qs(fill.dataset.fill).value = fill.textContent;
+        var copy = e.target.closest("[data-copy]");
+        if (copy) {
+          navigator.clipboard.writeText(qs(copy.dataset.copy).textContent || "");
+          copy.blur();
+        }
+        var word = e.target.closest("[data-word]");
+        if (word) exportWord(word.dataset.word, word.dataset.wordTitle);
+        var edit = e.target.closest("[data-edit-kb]");
+        if (edit) editKb(edit.dataset.editKb);
+        var del = e.target.closest("[data-delete-kb]");
+        if (del) deleteKb(del.dataset.deleteKb);
+        var disable = e.target.closest("[data-disable-kb]");
+        if (disable) disableKb(disable.dataset.disableKb);
+        var restore = e.target.closest("[data-restore-kb]");
+        if (restore) restoreKb(restore.dataset.restoreKb);
+        var useHistoryBtn = e.target.closest("[data-use-history]");
+        if (useHistoryBtn) useHistory(useHistoryBtn.dataset.useHistory, useHistoryBtn.dataset.historyId);
+        var deleteHistoryBtn = e.target.closest("[data-delete-history]");
+        if (deleteHistoryBtn) deleteHistory(deleteHistoryBtn.dataset.deleteHistory, deleteHistoryBtn.dataset.historyId);
+        var clearHistoryBtn = e.target.closest("[data-clear-history]");
+        if (clearHistoryBtn) clearHistory(clearHistoryBtn.dataset.clearHistory);
+        var tpl = e.target.closest("[data-template-index]");
+        if (tpl) {
+          qs("askInput").value = TEMPLATES[Number(tpl.dataset.templateIndex)].body;
+          switchView("ask");
+        }
+      });
+      qs("askAiBtn").addEventListener("click", function() {
+        var btn = this;
+        runWithBusy(btn, function() {
+          var prompt = withAdjust("搜索内容：" + qs("askInput").value, "askAdjust");
+          return callAI("内容搜索", prompt, "askOutput");
+        });
+      });
+      qs("topicAiBtn").addEventListener("click", function() {
+        var btn = this;
+        runWithBusy(btn, function() {
+          var prompt = withAdjust("平台：" + qs("topicPlatform").value + "\n目的：" + qs("topicGoal").value + "\n宴会类型：" + qs("topicBanquet").value + "\n门店：" + qs("topicStore").value + "\n形式：" + qs("topicFormat").value + "\n今日素材：" + qs("topicMaterial").value, "topicAdjust");
+          return callAI("选题策划", prompt, "topicOutput");
+        });
+      });
+      qs("createAiBtn").addEventListener("click", function() {
+        var btn = this;
+        runWithBusy(btn, function() {
+          var type = qs("createType").value;
+          var prompt = withAdjust("创作类型：" + type + "\n数量：" + qs("createCount").value + "\n门店：" + qs("createStore").value + "\n宴会类型：" + qs("createBanquet").value + "\n要求：" + qs("createBrief").value, "createAdjust");
+          return callAI("内容创作-" + type, prompt, "createOutput");
+        });
+      });
+      qs("salesAiBtn").addEventListener("click", function() {
+        var btn = this;
+        runWithBusy(btn, function() {
+          var prompt = withAdjust("销售阶段：" + qs("salesStage").value + "\n回复风格：" + qs("salesStyle").value + "\n客户原话：" + qs("salesInput").value + "\n已知信息：" + qs("salesContext").value, "salesAdjust");
+          return callAI("销售回复", prompt, "salesOutput");
+        });
+      });
+      qs("saveKbBtn").addEventListener("click", saveKb);
+      qs("organizeKbBtn").addEventListener("click", function() {
+        runWithBusy(this, organizeKbPreview);
+      });
+      qs("resetKbBtn").addEventListener("click", resetKbForm);
+      qs("kbBody").addEventListener("input", function() {
+        kbDraftPreview = null;
+        kbDraftSourceBody = "";
+        renderKbPreview(null);
+      });
+      qs("kbSearch").addEventListener("input", renderKbList);
+      qs("kbShowDisabled").addEventListener("change", renderKbList);
+      qs("kbSelectAll").addEventListener("change", function() {
+        document.querySelectorAll("[data-kb-select]").forEach(function(input) {
+          input.checked = qs("kbSelectAll").checked;
+        });
+      });
+      qs("kbDisableSelectedBtn").addEventListener("click", function() {
+        var ids = selectedKbIds();
+        if (!ids.length) return alert("请先勾选要停用的知识。");
+        disableKb(ids);
+      });
+      qs("kbRestoreSelectedBtn").addEventListener("click", function() {
+        var ids = selectedKbIds();
+        if (!ids.length) return alert("请先勾选要恢复的知识。");
+        restoreKb(ids);
+      });
+      qs("kbDeleteSelectedBtn").addEventListener("click", deleteSelectedKb);
+      qs("exportKbBtn").addEventListener("click", function() {
+        download("白金汉宫AI增长参谋-自定义知识库.json", JSON.stringify(getUserKb(), null, 2));
+      });
+      qs("importKbInput").addEventListener("change", function() {
+        var file = this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function() {
+          try {
+            var imported = JSON.parse(reader.result);
+            if (!Array.isArray(imported)) throw new Error("JSON 必须是数组");
+            var cleaned = imported.map(function(item) {
+              item.id = item.id || uid();
+              item.source = "自定义";
+              return item;
+            });
+            setUserKb(cleaned.concat(getUserKb()));
+            alert("导入成功：" + cleaned.length + " 条");
+          } catch (err) {
+            alert("导入失败：" + err.message);
+          }
+        };
+        reader.readAsText(file);
+        this.value = "";
+      });
+      qs("modelPreset").addEventListener("change", function() {
+        applyModelPreset(this.value, true);
+      });
+      qs("saveConfigBtn").addEventListener("click", function() {
+        setConfig(configFromForm());
+        alert("配置已保存。");
+      });
+      qs("clearConfigBtn").addEventListener("click", function() {
+        if (!confirm("确定清空模型配置吗？")) return;
+        localStorage.removeItem("bjh_config");
+        updateConfigStatus();
+      });
+      qs("testConfigBtn").addEventListener("click", function() {
+        runWithBusy(this, function() {
+          return testModelConnection();
+        });
+      });
+    }
+    function init() {
+      renderNav();
+      renderTemplates();
+      bindEvents();
+      updateConfigStatus();
+      applyModelPreset((getConfig().modelPreset || "openai"), false);
+      renderKbList();
+      renderAllHistory();
+      switchView("ask");
+      if (window.lucide) lucide.createIcons();
+    }
+    init();
+  </script>
+</body>
+</html>

@@ -724,7 +724,7 @@
       </div>
       <nav class="nav" id="nav"></nav>
       <div class="sidebar-footer">
-        纯静态网页版本。配置和新增知识只保存在当前浏览器，换设备前请先导出知识库。
+        员工个人配置和新增知识保存在本机；管理员飞书云端知识会自动同步。
       </div>
     </aside>
 
@@ -942,7 +942,7 @@
       <section class="view" data-view="kb">
         <div class="grid">
           <div class="panel">
-            <div class="notice">内置知识库已经写在网页里，所有人拿到链接后都会自带这些基础知识。你在这里新增的知识只保存在当前浏览器；要同步给其他员工，请导出 JSON，再让对方导入。后续如果要全员自动同步，需要升级成公司统一云端知识库版本。</div>
+            <div class="notice">内置知识库已经写在网页里，所有人拿到链接后都会自带基础知识。你在这里新增的知识只保存在当前浏览器；管理员在飞书多维表格里设置为“启用”的知识，会通过云端知识库自动叠加进来。</div>
             <h3 id="kbFormTitle">新增知识</h3>
             <div class="form-grid">
               <div class="field full">
@@ -966,6 +966,7 @@
               <h3>知识列表</h3>
               <span class="hint" id="kbCount"></span>
             </div>
+            <div class="notice" id="cloudKbStatus">云端知识库正在连接...</div>
             <div class="field">
               <label for="kbSearch">搜索</label>
               <input id="kbSearch" placeholder="搜索标题、分类、关键词、正文">
@@ -976,8 +977,9 @@
               <button class="btn ghost" id="kbDisableSelectedBtn"><i data-lucide="eye-off"></i>停用选中</button>
               <button class="btn ghost" id="kbRestoreSelectedBtn"><i data-lucide="rotate-ccw"></i>恢复选中</button>
               <button class="btn danger" id="kbDeleteSelectedBtn"><i data-lucide="trash-2"></i>删除选中</button>
+              <button class="btn secondary" id="refreshCloudKbBtn"><i data-lucide="refresh-cw"></i>刷新云端</button>
             </div>
-            <div class="hint">自定义知识可以删除；内置知识会被“停用”，停用后不会参与搜索匹配和 AI 提示词。</div>
+            <div class="hint">自定义知识可以删除；内置知识和飞书云端知识会被“停用”，停用后不会参与搜索匹配和 AI 提示词。</div>
             <div class="kb-list" id="kbList"></div>
           </div>
         </div>
@@ -1047,10 +1049,10 @@ README.md
 1. 用 Safari 或微信外部浏览器打开网页。
 2. 第一次进入“配置”填写自己的 API Key。
 3. 日常新增知识后，定期导出 JSON 备份。
-4. 给其他员工同步知识时，让对方导入 JSON。
+4. 管理员在飞书多维表格新增知识并设置“启用”后，员工刷新网页或点击“刷新云端”即可读取。
 
 纯静态边界：
-当前版本没有统一云端数据库，不会自动同步每个员工新增的知识。后续可以升级成 Supabase、飞书表格、腾讯文档或 GitHub 文件同步版本。</div>
+员工自己新增的知识仍保存在自己的手机或电脑浏览器里；管理员飞书云端知识会统一同步到所有人。</div>
           </div>
         </div>
       </section>
@@ -1308,6 +1310,10 @@ README.md
     var editBuiltInKbId = null;
     var kbDraftPreview = null;
     var kbDraftSourceBody = "";
+    var CLOUD_KB_URL = "https://bjh-feishu-knowledge.yijinhui22.workers.dev/knowledge";
+    var cloudKb = [];
+    var cloudKbLoadedAt = "";
+    var cloudKbError = "";
     var ACCESS_PASSWORD = "BJHG2026";
     var ACCESS_KEY = "bjh_access_granted";
     var appStarted = false;
@@ -1368,11 +1374,57 @@ README.md
       renderKbList();
     }
     function rawAllKb() {
-      return BUILT_IN_KB.concat(getUserKb());
+      return BUILT_IN_KB.concat(cloudKb).concat(getUserKb());
     }
     function allKb() {
       var disabled = getDisabledKbIds();
       return rawAllKb().filter(function(item) { return disabled.indexOf(item.id) < 0; });
+    }
+    function isCustomKb(item) {
+      return item && item.source === "自定义";
+    }
+    function updateCloudKbStatus() {
+      var box = qs("cloudKbStatus");
+      if (!box) return;
+      if (cloudKbError) {
+        box.textContent = "云端知识库连接失败：" + cloudKbError + "。当前仍可使用内置知识和本机新增知识。";
+        return;
+      }
+      if (!cloudKbLoadedAt) {
+        box.textContent = "云端知识库正在连接...";
+        return;
+      }
+      box.textContent = "云端知识库已连接：已同步 " + cloudKb.length + " 条飞书启用知识。最后更新：" + cloudKbLoadedAt;
+    }
+    async function loadCloudKnowledge() {
+      cloudKbError = "";
+      updateCloudKbStatus();
+      try {
+        var res = await fetch(CLOUD_KB_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var data = await res.json();
+        if (!data.ok) throw new Error(data.message || data.step || "接口返回失败");
+        cloudKb = (data.items || []).map(function(item) {
+          return {
+            id: item.id,
+            source: item.source || "飞书云端知识库",
+            category: item.category || "云端知识",
+            title: item.title || "云端知识",
+            body: item.body || "",
+            scene: item.scene || "飞书知识库",
+            keywords: item.keywords || "",
+            updatedAt: item.updatedAt || ""
+          };
+        }).filter(function(item) {
+          return item.id && item.body;
+        });
+        cloudKbLoadedAt = new Date().toLocaleString("zh-CN", { hour12: false });
+      } catch (err) {
+        cloudKb = [];
+        cloudKbError = err.message || "未知错误";
+      }
+      updateCloudKbStatus();
+      renderKbList();
     }
     function uid() {
       return "kb_" + Date.now() + "_" + Math.random().toString(16).slice(2);
@@ -1909,7 +1961,7 @@ README.md
       qs("kbCount").textContent = items.length + " 条" + (disabledCount ? "，已停用 " + disabledCount + " 条" : "");
       if (qs("kbSelectAll")) qs("kbSelectAll").checked = false;
       list.innerHTML = items.map(function(item) {
-        var editable = item.source !== "内置";
+        var editable = isCustomKb(item);
         var isDisabled = disabled.indexOf(item.id) >= 0;
         var bodyText = item.body.slice(0, 360) + (item.body.length > 360 ? "..." : "");
         return '<article class="kb-item' + (isDisabled ? " disabled" : "") + '">' +
@@ -1922,7 +1974,7 @@ README.md
           '<button class="btn ghost" data-edit-kb="' + item.id + '"><i data-lucide="pencil"></i>' + (editable ? '打开编辑' : '打开修订') + '</button>' +
           (editable ? '<button class="btn ghost" data-delete-kb="' + item.id + '"><i data-lucide="trash-2"></i>删除</button>' : '') +
           (isDisabled ? '<button class="btn ghost" data-restore-kb="' + item.id + '"><i data-lucide="rotate-ccw"></i>恢复</button>' : '<button class="btn ghost" data-disable-kb="' + item.id + '"><i data-lucide="eye-off"></i>停用</button>') +
-          (editable ? '' : '<span class="hint">内置知识保存后会生成自定义修订版，并停用原条目。</span>') +
+          (editable ? '' : '<span class="hint">保存后会生成自定义修订版，并停用原条目。</span>') +
           '</div></article>';
       }).join("");
       if (window.lucide) lucide.createIcons();
@@ -2125,18 +2177,18 @@ README.md
     function editKb(id) {
       var item = rawAllKb().filter(function(x) { return x.id === id; })[0];
       if (!item) return;
-      var isBuiltIn = item.source === "内置";
-      editKbId = isBuiltIn ? null : id;
-      editBuiltInKbId = isBuiltIn ? id : null;
+      var isCustom = isCustomKb(item);
+      editKbId = isCustom ? id : null;
+      editBuiltInKbId = isCustom ? null : id;
       kbDraftPreview = Object.assign({}, item, {
-        id: isBuiltIn ? uid() : item.id,
+        id: isCustom ? item.id : uid(),
         source: "自定义"
       });
       kbDraftSourceBody = item.body || "";
-      qs("kbFormTitle").textContent = isBuiltIn ? "修订内置知识" : "编辑知识";
+      qs("kbFormTitle").textContent = isCustom ? "编辑知识" : "修订知识";
       qs("kbBody").value = item.body || "";
       setKbEditorMode("edit", item);
-      renderKbPreview(kbDraftPreview, isBuiltIn ? "正在修订内置知识，保存后会生成自定义版本并停用原条目" : "正在编辑这条知识");
+      renderKbPreview(kbDraftPreview, isCustom ? "正在编辑这条知识" : "正在修订知识，保存后会生成自定义版本并停用原条目");
       switchView("kb");
       setTimeout(function() {
         qs("kbBody").focus();
@@ -2164,15 +2216,15 @@ README.md
       if (!ids.length) return alert("请先勾选要处理的知识。");
       var userIds = getUserKb().map(function(item) { return item.id; });
       var deletable = ids.filter(function(id) { return userIds.indexOf(id) >= 0; });
-      var builtIn = ids.filter(function(id) { return userIds.indexOf(id) < 0; });
-      if (!deletable.length && builtIn.length) {
-        alert("选中的都是内置知识，不能直接删除。我会帮你改用“停用选中”来屏蔽。");
-        disableKb(builtIn);
+      var protectedIds = ids.filter(function(id) { return userIds.indexOf(id) < 0; });
+      if (!deletable.length && protectedIds.length) {
+        alert("选中的都是内置或云端知识，不能直接删除。我会帮你改用“停用选中”来屏蔽。");
+        disableKb(protectedIds);
         return;
       }
-      if (!confirm("确定删除选中的自定义知识吗？" + (builtIn.length ? "\n内置知识不会删除，只会停用。" : ""))) return;
+      if (!confirm("确定删除选中的自定义知识吗？" + (protectedIds.length ? "\n内置和云端知识不会删除，只会停用。" : ""))) return;
       setUserKb(getUserKb().filter(function(item) { return deletable.indexOf(item.id) < 0; }));
-      if (builtIn.length) disableKb(builtIn);
+      if (protectedIds.length) disableKb(protectedIds);
       if (editKbId && deletable.indexOf(editKbId) >= 0) resetKbForm();
       renderKbList();
     }
@@ -2360,6 +2412,9 @@ README.md
         restoreKb(ids);
       });
       qs("kbDeleteSelectedBtn").addEventListener("click", deleteSelectedKb);
+      qs("refreshCloudKbBtn").addEventListener("click", function() {
+        runWithBusy(this, loadCloudKnowledge);
+      });
       qs("exportKbBtn").addEventListener("click", function() {
         download("白金汉宫AI增长参谋-自定义知识库.json", JSON.stringify(getUserKb(), null, 2));
       });
@@ -2411,6 +2466,7 @@ README.md
       updateConfigStatus();
       applyModelPreset((getConfig().modelPreset || "openai"), false);
       renderKbList();
+      loadCloudKnowledge();
       renderAllHistory();
       switchView("ask");
       if (window.lucide) lucide.createIcons();
